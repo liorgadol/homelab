@@ -1,0 +1,113 @@
+services:
+  # Dozzle - Docker container log viewer
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DOZZLE_LEVEL=info
+
+  # FileBrowser - Web-based file manager
+  filebrowser:
+    image: filebrowser/filebrowser:latest
+    container_name: filebrowser
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+    ports:
+      - "8081:8070"
+    volumes:
+      - ./filebrowser/data:/srv
+      - ./filebrowser/config:/config
+      - ./filebrowser/database:/database
+
+  # Homepage - Dashboard
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - HOMEPAGE_ALLOWED_HOSTS=${HOMEPAGE_ALLOWED_HOSTS}
+      - HOMEPAGE_VAR_FILEBROWSER_USERNAME=${FILEBROWSER_USERNAME}
+      - HOMEPAGE_VAR_FILEBROWSER_PASSWORD=${FILEBROWSER_PASSWORD}
+    volumes:
+      - ./homepage/config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  # Pi-hole - Network-wide ad blocker
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    hostname: pihole
+    restart: unless-stopped
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "80:80/tcp"
+      - "443:443/tcp"
+    environment:
+      TZ: ${PIHOLE_TZ}
+      WEBPASSWORD: ${PIHOLE_WEBPASSWORD}
+      SERVERIP: ${PIHOLE_SERVERIP}
+    volumes:
+      - ./pihole/etc-pihole/:/etc/pihole/
+      - ./pihole/etc-dnsmasq.d/:/etc/dnsmasq.d/
+
+  # Pinchflat - YouTube downloader and subscription manager
+  pinchflat:
+    image: ghcr.io/kieraneglin/pinchflat:latest
+    container_name: pinchflat
+    restart: unless-stopped
+    ports:
+      - "8945:8945"
+    volumes:
+      - ./pinchflat/config:/config
+      - ./pinchflat/downloads:/downloads
+    environment:
+      - TZ=${PIHOLE_TZ:-UTC}
+
+  # Portainer - Docker management UI
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    ports:
+      - "9443:9443"
+    volumes:
+      - portainer_data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  # Stirling PDF - PDF manipulation tools
+  stirling-pdf:
+    image: stirlingtools/stirling-pdf
+    container_name: stirling-pdf
+    restart: unless-stopped
+    ports:
+      - "8090:8080"
+    volumes:
+      - ./stirlingtools/configs:/configs
+      - ./stirlingtools/customFiles:/customFiles
+    environment:
+      - DOCKER_ENABLE_SECURITY=false
+
+  # Watchtower - Automatic container updates
+  watchtower:
+    image: nickfedor/watchtower:latest
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_LABEL_ENABLE=false
+      - WATCHTOWER_POLL_INTERVAL=1800
+
+volumes:
+  portainer_data:

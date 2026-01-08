@@ -1,0 +1,16 @@
+# Environment variables with sensitive data
+.env
+
+# Docker volumes data
+*/data/
+*/appdata/
+*/db/
+pihole/etc-pihole/
+pihole/etc-dnsmasq.d/
+homepage/config/
+stirlingtools/configs/
+stirlingtools/customFiles/
+
+# Logs
+*.log
+*/logs/

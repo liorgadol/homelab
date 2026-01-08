@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DOZZLE_LEVEL=info  # Optional: set the log level (debug, info, warn, error)
+      - DOZZLE_FILTER=     # Optional: filter containers by name
+#      - DOZZLE_TAILSIZE=300 # Optional: set the default number of log lines to display
+#      - DOZZLE_USERNAME=   # Optional: set basic auth username
+#      - DOZZLE_PASSWORD=   # Optional: set basic auth password
+
