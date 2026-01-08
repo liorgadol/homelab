@@ -246,4 +246,3 @@ This stack uses various open-source projects. Please refer to each project's lic
 - [Portainer](https://github.com/portainer/portainer)
 - [Stirling PDF](https://github.com/Stirling-Tools/Stirling-PDF)
 - [Watchtower](https://github.com/containrrr/watchtower)
-# homelab
