@@ -84,7 +84,7 @@ services:
       - portainer_data:/data
       - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "--no-check-certificate", "https://localhost:9443/"]
+      test: ["CMD-SHELL", "curl -k -f https://localhost:9443/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
