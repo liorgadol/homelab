@@ -11,6 +11,8 @@ pihole/etc-dnsmasq.d/
 homepage/config/
 stirlingtools/configs/
 stirlingtools/customFiles/
+filebrowser/database/
+pinchflat/config
 
 # Logs
 *.log
