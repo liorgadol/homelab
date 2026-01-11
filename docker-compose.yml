@@ -83,6 +83,12 @@ services:
     volumes:
       - portainer_data:/data
       - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "--no-check-certificate", "https://localhost:9443/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Stirling PDF - PDF manipulation tools
   stirling-pdf:
@@ -96,6 +102,12 @@ services:
       - ./stirlingtools/customFiles:/customFiles
     environment:
       - DOCKER_ENABLE_SECURITY=false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Watchtower - Automatic container updates
   watchtower:
