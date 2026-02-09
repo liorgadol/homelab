@@ -1,4 +1,22 @@
 services:
+  # Nginx - Reverse proxy for all services
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - portainer
+      - pinchflat
+      - dozzle
+      - homepage
+      - filebrowser
+      - stirling-pdf
+    networks:
+      - homelab
   # Dozzle - Docker container log viewer
   dozzle:
     image: amir20/dozzle:latest
@@ -10,6 +28,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - DOZZLE_LEVEL=info
+    networks:
+      - homelab
 
   # FileBrowser - Web-based file manager
   filebrowser:
@@ -25,6 +45,8 @@ services:
       - ./filebrowser/data:/srv
       - ./filebrowser/config:/config
       - ./filebrowser/database:/database
+    networks:
+      - homelab
 
   # Homepage - Dashboard
   homepage:
@@ -40,6 +62,8 @@ services:
     volumes:
       - ./homepage/config:/app/config
       - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - homelab
 
   # Pi-hole - Network-wide ad blocker
   pihole:
@@ -50,7 +74,6 @@ services:
     ports:
       - "53:53/tcp"
       - "53:53/udp"
-      - "80:80/tcp"
     environment:
       TZ: ${PIHOLE_TZ}
       WEBPASSWORD: ${PIHOLE_WEBPASSWORD}
@@ -59,6 +82,8 @@ services:
     volumes:
       - ./pihole/etc-pihole/:/etc/pihole/
       - ./pihole/etc-dnsmasq.d/:/etc/dnsmasq.d/
+    networks:
+      - homelab
 
   # Pinchflat - YouTube downloader and subscription manager
   pinchflat:
@@ -72,6 +97,8 @@ services:
       - ./pinchflat/downloads:/downloads
     environment:
       - TZ=${PIHOLE_TZ:-UTC}
+    networks:
+      - homelab
 
   # Portainer - Docker management UI
   portainer:
@@ -83,6 +110,8 @@ services:
     volumes:
       - portainer_data:/data
       - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - homelab
 
   # Stirling PDF - PDF manipulation tools
   stirling-pdf:
@@ -102,6 +131,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - homelab
 
   # Watchtower - Automatic container updates
   watchtower:
@@ -121,6 +152,12 @@ services:
       - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PORT=587
       - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_USER=${WATCHTOWER_EMAIL_USER}
       - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PASSWORD=${WATCHTOWER_EMAIL_PASSWORD}
+    networks:
+      - homelab
 
 volumes:
   portainer_data:
+
+networks:
+  homelab:
+    driver: bridge
