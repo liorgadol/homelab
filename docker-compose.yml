@@ -55,6 +55,7 @@ services:
       TZ: ${PIHOLE_TZ}
       WEBPASSWORD: ${PIHOLE_WEBPASSWORD}
       SERVERIP: ${PIHOLE_SERVERIP}
+      MAXDBDAYS: 30
     volumes:
       - ./pihole/etc-pihole/:/etc/pihole/
       - ./pihole/etc-dnsmasq.d/:/etc/dnsmasq.d/
