@@ -39,7 +39,7 @@ services:
       - HOMEPAGE_VAR_FILEBROWSER_PASSWORD=${FILEBROWSER_PASSWORD}
     volumes:
       - ./homepage/config:/app/config
-      - ./homepage/icons:/app/public/icons
+      - ./homepage/icons:/app/config/icons
       - /var/run/docker.sock:/var/run/docker.sock
 
   # Pi-hole - Network-wide ad blocker
