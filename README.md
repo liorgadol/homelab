@@ -38,7 +38,12 @@ YouTube downloader and subscription manager.
 Docker container management UI with advanced features.
 - Access at: `https://localhost:9443`
 
-### 📄 Stirling PDF
+### �️ Dockhand
+**Port:** 3001  
+Alternative Docker management UI for monitoring and managing containers.
+- Access at: `http://localhost:3001`
+
+### �📄 Stirling PDF
 **Port:** 8090  
 Self-hosted PDF manipulation tools (merge, split, convert, etc.).
 - Access at: `http://localhost:8090`
