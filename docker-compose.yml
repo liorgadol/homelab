@@ -74,7 +74,7 @@ services:
     environment:
       - TZ=${PIHOLE_TZ:-UTC}
 
-  # Portainer - Docker management UI
+  # Portainer - Docker Management UI
   portainer:
     image: portainer/portainer-ce:latest
     container_name: portainer
@@ -84,7 +84,18 @@ services:
     volumes:
       - portainer_data:/data
       - /var/run/docker.sock:/var/run/docker.sock
-
+  
+  # Dockhand - Docker Management UI
+  dockhand:
+    image: fnsys/dockhand:latest
+    container_name: dockhand
+    restart: unless-stopped
+    ports:
+      - 3001:3000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./dockhand/data:/app/data
+  
   # Stirling PDF - PDF manipulation tools
   stirling-pdf:
     image: stirlingtools/stirling-pdf
