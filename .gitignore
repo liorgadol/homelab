@@ -6,6 +6,7 @@
 */data/
 */appdata/
 */db/
+dockhand/data/
 pihole/etc-pihole/
 pihole/etc-dnsmasq.d/
 homepage/config/
