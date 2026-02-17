@@ -4,7 +4,6 @@
 
 # Docker volumes data
 */data/
-!/dockhand/data/
 */appdata/
 */db/
 pihole/etc-pihole/
