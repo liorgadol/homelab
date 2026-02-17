@@ -13,6 +13,7 @@ stirlingtools/configs/
 stirlingtools/customFiles/
 filebrowser/database/
 pinchflat/config
+pinchflat/downloads
 
 # Logs
 *.log
