@@ -61,6 +61,18 @@ services:
       - ./pihole/etc-pihole/:/etc/pihole/
       - ./pihole/etc-dnsmasq.d/:/etc/dnsmasq.d/
 
+  # DDClient - Dynamic DNS updater
+  ddclient: 
+    image: lscr.io/linuxserver/ddclient:latest
+    container_name: ddclient
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Jerusalem
+    volumes:
+      - ./ddclient:/config
+    restart: unless-stopped
+
   # Pinchflat - YouTube downloader and subscription manager
   pinchflat:
     image: ghcr.io/kieraneglin/pinchflat:latest
