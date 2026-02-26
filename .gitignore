@@ -16,6 +16,7 @@ filebrowser/database/
 pinchflat/downloads
 immich/
 splitcam/
+ddclient/
 
 # Logs
 *.log
