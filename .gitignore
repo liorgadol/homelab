@@ -17,6 +17,7 @@ pinchflat/downloads
 immich/
 splitcam/
 ddclient/
+/wgeasy/config/
 
 # Logs
 *.log
