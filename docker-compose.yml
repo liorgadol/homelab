@@ -156,7 +156,7 @@ services:
     environment:
       - WG_HOST=liorgadol.ddnsfree.com
       - WG_PORT=51820
-      - PASSWORD=${WIREGUARD_PASS}
+      - PASSWORD_HASH=${WIREGUARD_PASS_HASH}
       - TZ=Asia/Jerusalem
     volumes:
       - ./config:/etc/wireguard
