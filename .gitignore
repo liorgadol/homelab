@@ -14,6 +14,7 @@ stirlingtools/configs/
 stirlingtools/customFiles/
 filebrowser/database/
 pinchflat/downloads
+pinchflat/config/
 immich/
 splitcam/
 ddclient/
