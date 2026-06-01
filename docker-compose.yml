@@ -48,10 +48,7 @@ services:
     image: pihole/pihole:latest
     hostname: pihole
     restart: unless-stopped
-    ports:
-      - "53:53/tcp"
-      - "53:53/udp"
-      - "80:80/tcp"
+    network_mode: host
     environment:
       TZ: ${PIHOLE_TZ}
       WEBPASSWORD: ${PIHOLE_WEBPASSWORD}
