@@ -46,6 +46,8 @@ services:
   pihole:
     container_name: pihole
     image: pihole/pihole:latest
+    cap_add:
+      - NET_ADMIN
     hostname: pihole
     restart: unless-stopped
     ports:
