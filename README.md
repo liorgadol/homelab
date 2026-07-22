@@ -33,17 +33,12 @@ YouTube downloader and subscription manager.
 - Access at: `http://localhost:8945`
 - Downloads saved to: `./pinchflat/downloads`
 
-### 🐳 Portainer
-**Port:** 9443  
-Docker container management UI with advanced features.
-- Access at: `https://localhost:9443`
-
-### �️ Dockhand
+### 🐳 Dockhand
 **Port:** 3001  
-Alternative Docker management UI for monitoring and managing containers.
+Docker container management UI for monitoring and managing containers.
 - Access at: `http://localhost:3001`
 
-### �📄 Stirling PDF
+### 📄 Stirling PDF
 **Port:** 8090  
 Self-hosted PDF manipulation tools (merge, split, convert, etc.).
 - Access at: `http://localhost:8090`
@@ -53,6 +48,17 @@ Self-hosted PDF manipulation tools (merge, split, convert, etc.).
 Automatically updates running Docker containers.
 - Checks for updates every 30 minutes (1800 seconds)
 - Automatically cleans up old images
+- Sends update notifications by email
+
+### 🔒 WireGuard (wg-easy)
+**Ports:** 51820 (VPN, UDP), 51821 (Web UI, TCP)  
+Self-hosted VPN server with a web UI for managing peers.
+- Web UI: `http://localhost:51821`
+
+### 📊 Glances
+**Port:** 61208  
+System monitoring dashboard (CPU, memory, disk, containers).
+- Access at: `http://localhost:61208`
 
 ## Prerequisites
 
@@ -73,17 +79,28 @@ FILEBROWSER_PASSWORD=changeme
 PIHOLE_TZ=America/New_York
 PIHOLE_WEBPASSWORD=your_secure_password
 PIHOLE_SERVERIP=192.168.1.100
+
+# WireGuard (wg-easy) Configuration
+WIREGUARD_PASS_HASH=your_bcrypt_password_hash
+
+# Watchtower Email Notifications
+WATCHTOWER_EMAIL_USER=your_gmail_address
+WATCHTOWER_EMAIL_PASSWORD=your_gmail_app_password
+WATCHTOWER_EMAIL_FROM=your_gmail_address
+WATCHTOWER_EMAIL_TO=notify_address
 ```
 
 ### Required Variables:
 - `PIHOLE_TZ`: Your timezone (e.g., America/New_York, Europe/London)
 - `PIHOLE_WEBPASSWORD`: Password for Pi-hole admin interface
 - `PIHOLE_SERVERIP`: Your server's IP address
+- `WIREGUARD_PASS_HASH`: bcrypt hash for wg-easy web UI password
 
 ### Optional Variables:
 - `HOMEPAGE_ALLOWED_HOSTS`: Allowed hostnames for Homepage (leave empty for all)
 - `FILEBROWSER_USERNAME`: FileBrowser username (default: admin)
 - `FILEBROWSER_PASSWORD`: FileBrowser password
+- `WATCHTOWER_EMAIL_USER`, `WATCHTOWER_EMAIL_PASSWORD`, `WATCHTOWER_EMAIL_FROM`, `WATCHTOWER_EMAIL_TO`: SMTP notification settings for Watchtower (Gmail)
 
 ## Quick Start
 
@@ -125,9 +142,13 @@ The stack will create the following directories for persistent data:
 ├── pinchflat/
 │   ├── config/
 │   └── downloads/
-└── stirlingtools/
-    ├── configs/
-    └── customFiles/
+├── stirlingtools/
+│   ├── configs/
+│   └── customFiles/
+├── dockhand/
+│   └── data/
+└── wgeasy/
+    └── config/
 ```
 
 ## Management Commands
@@ -172,8 +193,10 @@ docker compose logs -f dozzle
 | Homepage | http://localhost:3000 | Dashboard |
 | Pi-hole | http://localhost/admin | Ad blocker |
 | Pinchflat | http://localhost:8945 | YouTube downloader |
-| Portainer | https://localhost:9443 | Docker management |
+| Dockhand | http://localhost:3001 | Docker management |
 | Stirling PDF | http://localhost:8090 | PDF tools |
+| wg-easy | http://localhost:51821 | WireGuard VPN management |
+| Glances | http://localhost:61208 | System monitoring |
 
 ## Port Conflicts
 
@@ -198,6 +221,8 @@ Important directories to backup:
 - `./pihole/` - Pi-hole configuration and blocklists
 - `./pinchflat/config/` - Pinchflat subscriptions
 - `./stirlingtools/configs/` - Stirling PDF settings
+- `./dockhand/data/` - Dockhand configuration
+- `./wgeasy/config/` - WireGuard peer configs and keys
 
 ## Troubleshooting
 
@@ -228,8 +253,8 @@ docker compose up -d [service_name]
 - Change all default passwords immediately
 - Pi-hole runs on standard HTTP/HTTPS ports (80/443) - consider using a reverse proxy
 - Stirling PDF has security disabled - enable if exposing to internet
-- Consider placing services behind a VPN if accessing remotely
-- Portainer uses HTTPS on port 9443 - you'll get a certificate warning on first access
+- Consider placing services behind a VPN if accessing remotely (wg-easy is included for this)
+- Several services (Dozzle, Homepage, Dockhand, Watchtower, Glances) mount `/var/run/docker.sock` directly - anyone with access to those containers has effective root on the host
 
 ## Updates
 
@@ -248,6 +273,8 @@ This stack uses various open-source projects. Please refer to each project's lic
 - [Homepage](https://github.com/gethomepage/homepage)
 - [Pi-hole](https://github.com/pi-hole/pi-hole)
 - [Pinchflat](https://github.com/kieraneglin/pinchflat)
-- [Portainer](https://github.com/portainer/portainer)
+- [Dockhand](https://github.com/fnsys/dockhand)
 - [Stirling PDF](https://github.com/Stirling-Tools/Stirling-PDF)
 - [Watchtower](https://github.com/containrrr/watchtower)
+- [wg-easy](https://github.com/wg-easy/wg-easy)
+- [Glances](https://github.com/nicolargo/glances)
