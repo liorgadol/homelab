@@ -63,19 +63,6 @@ services:
       - ./pihole/etc-pihole/:/etc/pihole/
       - ./pihole/etc-dnsmasq.d/:/etc/dnsmasq.d/
 
-  # DDClient - Dynamic DNS updater
-  # ddclient: 
-  #   image: lscr.io/linuxserver/ddclient:latest
-  #   container_name: ddclient
-  #   environment:
-  #     - PUID=1000
-  #     - PGID=1000
-  #     - TZ=Asia/Jerusalem
-  #   volumes:
-  #     - ./ddclient:/config
-  #   restart: unless-stopped
-
-  # Pinchflat - YouTube downloader and subscription manager
   pinchflat:
     image: ghcr.io/kieraneglin/pinchflat:latest
     container_name: pinchflat
@@ -88,17 +75,6 @@ services:
     environment:
       - TZ=${PIHOLE_TZ:-UTC}
 
-  # # Portainer - Docker Management UI
-  # portainer:
-  #   image: portainer/portainer-ce:latest
-  #   container_name: portainer
-  #   restart: unless-stopped
-  #   ports:
-  #     - "9443:9443"
-  #   volumes:
-  #     - portainer_data:/data
-  #     - /var/run/docker.sock:/var/run/docker.sock
-  
   # Dockhand - Docker Management UI
   dockhand:
     image: fnsys/dockhand:latest
@@ -177,6 +153,3 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       - GLANCES_OPT=-w
-
-volumes:
-  portainer_data:
