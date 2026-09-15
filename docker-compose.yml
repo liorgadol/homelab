@@ -131,6 +131,8 @@ services:
       - ./wud/data:/store
     environment:
       - TZ=Asia/Jerusalem
+      - WUD_AUTH_ADMIN_USER=admin
+      - WUD_AUTH_ADMIN_PASSWORD=${WUD_AUTH_ADMIN_PASSWORD}
 
   # WireGuard - VPN server
   wg-easy:
