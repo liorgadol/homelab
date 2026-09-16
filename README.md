@@ -55,6 +55,14 @@ Automatically updates running Docker containers.
 Self-hosted VPN server with a web UI for managing peers.
 - Web UI: `http://localhost:51821`
 
+### ✂️ Cutter
+**Port:** 8083  
+Image background removal (rembg) and print bleed tool. Built from source in `./cutter`.
+- Access at: `http://localhost:8083`
+- `cutter-frontend` (nginx + React) proxies `/remove-bg`, `/add-bleed`, `/health` to `cutter-backend` (FastAPI, internal :8000)
+- First build downloads the `u2net` model (~170MB) and bakes it into the image (~3-5 min)
+- Excluded from Watchtower updates (locally built images)
+
 ### 📊 Glances
 **Port:** 61208  
 System monitoring dashboard (CPU, memory, disk, containers).
@@ -196,6 +204,7 @@ docker compose logs -f dozzle
 | Dockhand | http://localhost:3001 | Docker management |
 | Stirling PDF | http://localhost:8090 | PDF tools |
 | wg-easy | http://localhost:51821 | WireGuard VPN management |
+| Cutter | http://localhost:8083 | Background removal / bleed |
 | Glances | http://localhost:61208 | System monitoring |
 
 ## Port Conflicts

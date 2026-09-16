@@ -1,0 +1,7 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+rembg[cpu]==2.0.75
+pillow>=12.1.0,<13.0.0
+python-multipart==0.0.9
+numpy>=1.26,<3
+scipy>=1.11,<2

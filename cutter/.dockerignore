@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+**/__pycache__
+**/.pytest_cache
+**/venv
+**/.venv
+**/*.pyc
+.git
+.gitignore
+docs
+.superpowers
+*.md
+backend/backend_output.log

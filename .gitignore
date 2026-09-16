@@ -23,3 +23,9 @@ ddclient/
 # Logs
 *.log
 */logs/
+
+# Cutter build artifacts
+cutter/frontend/node_modules/
+cutter/frontend/dist/
+cutter/**/__pycache__/
+cutter/**/.pytest_cache/

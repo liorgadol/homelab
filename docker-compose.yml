@@ -214,6 +214,38 @@ services:
       retries: 3
       start_period: 5s
 
+  # Cutter - Image background removal + print bleed tool (API)
+  cutter-backend:
+    build:
+      context: ./cutter
+      dockerfile: Dockerfile.backend
+    container_name: cutter_backend
+    restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    expose:
+      - "8000"
+    networks:
+      - cutter-net
+
+  # Cutter web - React UI on nginx (proxies /remove-bg, /add-bleed to backend)
+  cutter-frontend:
+    build:
+      context: ./cutter
+      dockerfile: Dockerfile.frontend
+    container_name: cutter_frontend
+    restart: unless-stopped
+    depends_on:
+      - cutter-backend
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    ports:
+      - "8083:80"
+    networks:
+      - cutter-net
+
 networks:
   camera-net:
+    driver: bridge
+  cutter-net:
     driver: bridge
