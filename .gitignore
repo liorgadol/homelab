@@ -29,3 +29,11 @@ cutter/frontend/node_modules/
 cutter/frontend/dist/
 cutter/**/__pycache__/
 cutter/**/.pytest_cache/
+
+# Emby - keep settings + library definitions, drop metadata/cache/DBs
+emby/config/*
+!emby/config/config/
+!emby/config/root/
+!emby/config/plugins/
+emby/config/plugins/*
+!emby/config/plugins/configurations/

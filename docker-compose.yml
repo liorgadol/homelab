@@ -244,8 +244,69 @@ services:
     networks:
       - cutter-net
 
+  # Emby - Media server (hw transcode via /dev/dri, libraries over CIFS)
+  emby:
+    image: emby/embyserver:latest
+    container_name: emby
+    restart: unless-stopped
+    environment:
+      - UID=1000
+      - GID=1000
+      - GIDLIST=1000,44,993   # own gid, video=44, render=993
+      - TZ=Asia/Jerusalem
+    ports:
+      - "8096:8096"    # http
+      - "8920:8920"    # https
+    devices:
+      - /dev/dri:/dev/dri   # Intel/AMD hw transcode. Remove if no iGPU.
+    volumes:
+      - ./emby/config:/config
+      - movies:/media/movies
+      - movies2:/media/movies2
+      - movies3:/media/movies3
+      - movies4:/media/movies4
+      - movies4k:/media/movies4k
+      - series:/media/series
+      - music:/media/music
+      - camera:/media/camera
+
 networks:
   camera-net:
     driver: bridge
   cutter-net:
     driver: bridge
+
+volumes:
+  movies:
+    driver_opts: &cifs
+      type: cifs
+      o: "username=${SMB_USER},password=${SMB_PASS},vers=3.0,uid=1000,gid=1000,file_mode=0664,dir_mode=0775,nobrl,iocharset=utf8"
+      device: "//192.168.1.2/Movies"
+  movies2:
+    driver_opts:
+      <<: *cifs
+      device: "//192.168.1.2/Movies 2"
+  movies3:
+    driver_opts:
+      <<: *cifs
+      device: "//192.168.1.2/Movies 3"
+  movies4:
+    driver_opts:
+      <<: *cifs
+      device: "//192.168.1.2/Movies 4"
+  movies4k:
+    driver_opts:
+      <<: *cifs
+      device: "//192.168.1.2/Movies 4k"
+  series:
+    driver_opts:
+      <<: *cifs
+      device: "//192.168.1.2/Series"
+  music:
+    driver_opts:
+      <<: *cifs
+      device: "//192.168.1.2/Music"
+  camera:
+    driver_opts:
+      <<: *cifs
+      device: "//192.168.1.2/Camera"
