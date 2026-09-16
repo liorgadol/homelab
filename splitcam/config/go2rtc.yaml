@@ -1,0 +1,19 @@
+streams:
+  camera1:
+    - rtsp://${CAMERA_USER}:${CAMERA_PASSWORD}@${CAMERA1_IP}:554/stream1
+    
+  camera2:
+    - rtsp://${CAMERA_USER}:${CAMERA_PASSWORD}@${CAMERA2_IP}:554/stream1
+
+api:
+  listen: ":1984"
+  origin: "*"
+
+webrtc:
+  listen: ":8555"
+  candidates:
+    - 192.168.1.200:8555
+    - stun:8555
+
+log:
+  level: info
