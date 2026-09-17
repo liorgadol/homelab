@@ -44,19 +44,18 @@ Self-hosted PDF manipulation tools (merge, split, convert, etc.).
 - Access at: `http://localhost:8090`
 - Security disabled for local use
 
-### 🔄 Watchtower
-Automatically updates running Docker containers.
-- Image: `nickfedor/watchtower` (maintained fork of containrrr/watchtower)
-- Checks for updates every 30 minutes (1800 seconds)
-- Automatically cleans up old images
-- Sends update notifications by email (shoutrrr SMTP)
-
-### 🔔 WUD (What's up Docker)
+### 🔄 WUD (What's up Docker)
 **Port:** 3033  
-Container update checker/notifier — reports which images have newer tags available.
+Checks for image updates, applies them, and emails on every new version found. Replaces Watchtower.
 - Access at: `http://localhost:3033` (container listens on 3000)
 - Basic auth: user `admin`, password from `WUD_AUTH_ADMIN_PASSWORD`
 - State stored in: `./wud/data`
+- Scans every 30 minutes (`WUD_WATCHER_LOCAL_CRON`)
+- Watches digests as well as tags (`WATCHDIGESTDEFAULT=true`), required to detect updates on `:latest`
+- Pulls and recreates containers automatically, pruning the old images
+- Updates itself via a helper container that rolls back if the new one fails its healthcheck
+- Sends one email per detected update (SMTP, Gmail)
+- See [Updates](#updates) for per-container opt-outs
 
 ### 🔒 WireGuard (wg-easy)
 **Ports:** 51820 (VPN, UDP), 51821 (Web UI, TCP)  
@@ -84,7 +83,7 @@ Image background removal (rembg) and print bleed tool. Built from source in `./c
 - Access at: `http://localhost:8083`
 - `cutter-frontend` (nginx + React) proxies `/remove-bg`, `/add-bleed`, `/health` to `cutter-backend` (FastAPI, internal :8000)
 - First build downloads the `u2net` model (~170MB) and bakes it into the image (~3-5 min)
-- Excluded from Watchtower updates (locally built images)
+- Excluded from WUD entirely via `wud.watch=false` (locally built images have no registry to check)
 
 ### 🎬 Emby
 **Ports:** 8096 (HTTP), 8920 (HTTPS)  
@@ -126,11 +125,11 @@ PIHOLE_SERVERIP=192.168.1.100
 # WireGuard (wg-easy) Configuration
 WIREGUARD_PASS_HASH=your_bcrypt_password_hash
 
-# Watchtower Email Notifications
-WATCHTOWER_EMAIL_USER=your_gmail_address
-WATCHTOWER_EMAIL_PASSWORD=your_gmail_app_password
-WATCHTOWER_EMAIL_FROM=your_gmail_address
-WATCHTOWER_EMAIL_TO=notify_address
+# WUD Email Notifications
+WUD_EMAIL_USER=your_gmail_address
+WUD_EMAIL_PASSWORD=your_gmail_app_password
+WUD_EMAIL_FROM=your_gmail_address
+WUD_EMAIL_TO=notify_address
 
 # WUD Configuration
 WUD_AUTH_ADMIN_PASSWORD=your_secure_password
@@ -159,7 +158,7 @@ SMB_PASS=nas_password
 - `HOMEPAGE_ALLOWED_HOSTS`: Allowed hostnames for Homepage (leave empty for all)
 - `FILEBROWSER_USERNAME`: FileBrowser username (default: admin)
 - `FILEBROWSER_PASSWORD`: FileBrowser password
-- `WATCHTOWER_EMAIL_USER`, `WATCHTOWER_EMAIL_PASSWORD`, `WATCHTOWER_EMAIL_FROM`, `WATCHTOWER_EMAIL_TO`: SMTP notification settings for Watchtower (Gmail)
+- `WUD_EMAIL_USER`, `WUD_EMAIL_PASSWORD`, `WUD_EMAIL_FROM`, `WUD_EMAIL_TO`: SMTP notification settings for WUD (Gmail). These are read by Docker Compose on the host and substituted into the `WUD_TRIGGER_SMTP_GMAIL_*` variables; WUD itself never sees them under these names.
 
 Note: several containers (WUD, wg-easy, Emby) have `TZ=Asia/Jerusalem` hardcoded in `docker-compose.yml`. Pinchflat reuses `PIHOLE_TZ`.
 
@@ -244,7 +243,7 @@ docker compose restart [service_name]
 ```
 
 ### Update all containers
-Watchtower handles this automatically, but you can also manually update:
+WUD handles this automatically, but you can also manually update:
 ```bash
 docker compose pull
 docker compose up -d
@@ -276,7 +275,7 @@ docker compose logs -f dozzle
 | Pinchflat | http://localhost:8945 | YouTube downloader |
 | Dockhand | http://localhost:3001 | Docker management |
 | Stirling PDF | http://localhost:8090 | PDF tools |
-| WUD | http://localhost:3033 | Image update checker |
+| WUD | http://localhost:3033 | Image update checker + auto-updater |
 | wg-easy | http://localhost:51821 | WireGuard VPN management |
 | go2rtc | http://localhost:1984 | Camera stream server |
 | Splitcam web | http://localhost:8082 | Camera viewer |
@@ -390,20 +389,33 @@ Check the RTSP URL works directly (`ffprobe rtsp://user:pass@ip:554/stream1`), a
 - Pi-hole runs on the standard HTTP port (80) - consider using a reverse proxy
 - Stirling PDF has security disabled - enable if exposing to internet
 - Consider placing services behind a VPN if accessing remotely (wg-easy is included for this)
-- Several services (Dozzle, Homepage, Dockhand, Watchtower, WUD, Glances) mount `/var/run/docker.sock` - anyone with access to those containers has effective root on the host
+- Several services (Dozzle, Homepage, Dockhand, WUD, Glances) mount `/var/run/docker.sock` - anyone with access to those containers has effective root on the host
 - go2rtc's API is configured with `origin: "*"` and no authentication - do not expose port 1984 to the internet
 - Camera and NAS credentials live in `.env` and are interpolated into stream URLs and mount options - keep `.env` out of version control (it is already in `.gitignore`)
 
 ## Updates
 
-Watchtower automatically checks for and applies updates every 30 minutes. WUD tracks available updates without applying them. To disable automatic updates for a specific service, add this label:
+WUD scans every 30 minutes, emails once per newly detected version, then pulls the new image and recreates the container.
+
+Two per-container opt-outs, set as Docker labels:
+
+**Monitor only** — still scanned, still emailed, never updated. The replacement for Watchtower's `monitor-only=true`:
 
 ```yaml
 labels:
-  - "com.centurylinklabs.watchtower.enable=false"
+  - "wud.trigger.exclude=docker.local"
 ```
 
-The Cutter services already carry this label because they are built locally.
+`docker.local` is the auto-update trigger's id (`{type}.{name}`); the `smtp.gmail` email trigger still applies. Immich uses this.
+
+**Ignore completely** — not scanned, not emailed, not updated:
+
+```yaml
+labels:
+  - "wud.watch=false"
+```
+
+The Cutter services carry this one because they are built locally and have no registry to check.
 
 ## License
 
@@ -415,7 +427,6 @@ This stack uses various open-source projects. Please refer to each project's lic
 - [Pinchflat](https://github.com/kieraneglin/pinchflat)
 - [Dockhand](https://github.com/fnsys/dockhand)
 - [Stirling PDF](https://github.com/Stirling-Tools/Stirling-PDF)
-- [Watchtower](https://github.com/nicholas-fedor/watchtower)
 - [WUD](https://github.com/getwud/wud)
 - [wg-easy](https://github.com/wg-easy/wg-easy)
 - [go2rtc](https://github.com/AlexxIT/go2rtc)

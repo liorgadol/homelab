@@ -105,21 +105,7 @@ services:
       retries: 3
       start_period: 40s
 
-  # Watchtower - Automatic container updates
-  watchtower:
-    image: nickfedor/watchtower:latest
-    container_name: watchtower
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_LABEL_ENABLE=false
-      - WATCHTOWER_POLL_INTERVAL=1800
-      - WATCHTOWER_NOTIFICATIONS=shoutrrr
-      - WATCHTOWER_NOTIFICATION_URL=smtp://${WATCHTOWER_EMAIL_USER}:${WATCHTOWER_EMAIL_PASSWORD}@smtp.gmail.com:587/?fromAddress=${WATCHTOWER_EMAIL_FROM}&toAddresses=${WATCHTOWER_EMAIL_TO}&auth=Plain&fromName=Watchtower
-
-  # WUD - What's up Docker (container update checker)
+  # WUD - What's up Docker (update checker + auto-updater, replaces Watchtower)
   wud:
     image: getwud/wud:latest
     container_name: wud
@@ -133,6 +119,34 @@ services:
       - TZ=Asia/Jerusalem
       - WUD_AUTH_ADMIN_USER=admin
       - WUD_AUTH_ADMIN_PASSWORD=${WUD_AUTH_ADMIN_PASSWORD}
+
+      # Watcher: scan every 30 min, all containers unless labelled wud.watch=false.
+      # WATCHDIGESTDEFAULT=true is required for :latest tags on Docker Hub,
+      # otherwise digest-only updates are never detected.
+      - WUD_WATCHER_LOCAL_CRON=*/30 * * * *
+      - WUD_WATCHER_LOCAL_WATCHBYDEFAULT=true
+      - WUD_WATCHER_LOCAL_WATCHDIGESTDEFAULT=true
+
+      # Auto-update trigger (pull + recreate). Containers opt out with
+      # the label wud.trigger.exclude=docker.local (monitor-only).
+      - WUD_TRIGGER_DOCKER_LOCAL_PRUNE=true
+      - WUD_TRIGGER_DOCKER_LOCAL_SELFUPDATE=true
+
+      # Email trigger. ONCE defaults to true: one mail per detected update.
+      - WUD_TRIGGER_SMTP_GMAIL_HOST=smtp.gmail.com
+      - WUD_TRIGGER_SMTP_GMAIL_PORT=587
+      - WUD_TRIGGER_SMTP_GMAIL_TLS_ENABLED=true
+      - WUD_TRIGGER_SMTP_GMAIL_USER=${WUD_EMAIL_USER}
+      - WUD_TRIGGER_SMTP_GMAIL_PASS=${WUD_EMAIL_PASSWORD}
+      - WUD_TRIGGER_SMTP_GMAIL_FROM_ADDRESS=${WUD_EMAIL_FROM}
+      - WUD_TRIGGER_SMTP_GMAIL_FROM_NAME=WUD
+      - WUD_TRIGGER_SMTP_GMAIL_TO=${WUD_EMAIL_TO}
+    healthcheck:
+      test: curl --fail http://localhost:3000/health || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   # WireGuard - VPN server
   wg-easy:
@@ -222,7 +236,7 @@ services:
     container_name: cutter_backend
     restart: unless-stopped
     labels:
-      - "com.centurylinklabs.watchtower.enable=false"
+      - "wud.watch=false"
     expose:
       - "8000"
     networks:
@@ -238,7 +252,7 @@ services:
     depends_on:
       - cutter-backend
     labels:
-      - "com.centurylinklabs.watchtower.enable=false"
+      - "wud.watch=false"
     ports:
       - "8083:80"
     networks:
