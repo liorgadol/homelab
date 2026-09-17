@@ -53,7 +53,7 @@ Checks for image updates, applies them, and emails on every new version found. R
 - Scans every 30 minutes (`WUD_WATCHER_LOCAL_CRON`)
 - Watches digests as well as tags (`WATCHDIGESTDEFAULT=true`), required to detect updates on `:latest`
 - Pulls and recreates containers automatically, pruning the old images
-- Updates itself via a helper container that rolls back if the new one fails its healthcheck
+- Excluded from its own auto-update trigger (`wud.trigger.exclude=docker.local`): WUD 9.0.2 has no self-update guard and would stop its own container mid-swap. Bump it manually with `docker compose pull wud && docker compose up -d wud`
 - Sends one email per detected update (SMTP, Gmail)
 - See [Updates](#updates) for per-container opt-outs
 

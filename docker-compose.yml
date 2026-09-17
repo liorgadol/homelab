@@ -115,6 +115,10 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./wud/data:/store
+    labels:
+      # WUD 9.0.2 has no self-update guard: updating itself would stop its own
+      # container mid-swap and leave it down. Bump WUD by hand.
+      - "wud.trigger.exclude=docker.local"
     environment:
       - TZ=Asia/Jerusalem
       - WUD_AUTH_ADMIN_USER=admin
@@ -130,7 +134,6 @@ services:
       # Auto-update trigger (pull + recreate). Containers opt out with
       # the label wud.trigger.exclude=docker.local (monitor-only).
       - WUD_TRIGGER_DOCKER_LOCAL_PRUNE=true
-      - WUD_TRIGGER_DOCKER_LOCAL_SELFUPDATE=true
 
       # Email trigger. ONCE defaults to true: one mail per detected update.
       - WUD_TRIGGER_SMTP_GMAIL_HOST=smtp.gmail.com
