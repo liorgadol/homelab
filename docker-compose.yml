@@ -146,8 +146,11 @@ services:
       - WUD_REGISTRY_HUB_PUBLIC_SUPPRESSDIGESTWATCHWARNING=true
 
       # Email trigger. ONCE defaults to true: one mail per detected update.
+      # Port 465 with TLS_ENABLED=true: WUD maps that flag to nodemailer's
+      # "secure", which is implicit TLS. On 587 (STARTTLS) it fails with
+      # "wrong version number".
       - WUD_TRIGGER_SMTP_GMAIL_HOST=smtp.gmail.com
-      - WUD_TRIGGER_SMTP_GMAIL_PORT=587
+      - WUD_TRIGGER_SMTP_GMAIL_PORT=465
       - WUD_TRIGGER_SMTP_GMAIL_TLS_ENABLED=true
       - WUD_TRIGGER_SMTP_GMAIL_USER=${WUD_EMAIL_USER}
       - WUD_TRIGGER_SMTP_GMAIL_PASS=${WUD_EMAIL_PASSWORD}
