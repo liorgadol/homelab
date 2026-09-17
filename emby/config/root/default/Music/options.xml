@@ -1,0 +1,130 @@
+<?xml version="1.0"?>
+<LibraryOptions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <EnableArchiveMediaFiles>false</EnableArchiveMediaFiles>
+  <EnablePhotos>true</EnablePhotos>
+  <EnableRealtimeMonitor>true</EnableRealtimeMonitor>
+  <EnableMarkerDetection>false</EnableMarkerDetection>
+  <EnableMarkerDetectionDuringLibraryScan>false</EnableMarkerDetectionDuringLibraryScan>
+  <EnableChapterImageExtraction>false</EnableChapterImageExtraction>
+  <ExtractChapterImagesDuringLibraryScan>false</ExtractChapterImagesDuringLibraryScan>
+  <DownloadImagesInAdvance>false</DownloadImagesInAdvance>
+  <PathInfos>
+    <MediaPathInfo>
+      <Path>/media/music</Path>
+      <NetworkPath>\\192.168.1.2\Music</NetworkPath>
+    </MediaPathInfo>
+  </PathInfos>
+  <IgnoreHiddenFiles>false</IgnoreHiddenFiles>
+  <IgnoreFileExtensions />
+  <SaveLocalMetadata>false</SaveLocalMetadata>
+  <SaveMetadataHidden>false</SaveMetadataHidden>
+  <SaveLocalThumbnailSets>false</SaveLocalThumbnailSets>
+  <ImportMissingEpisodes>false</ImportMissingEpisodes>
+  <ImportPlaylists>true</ImportPlaylists>
+  <EnableAutomaticSeriesGrouping>true</EnableAutomaticSeriesGrouping>
+  <EnableEmbeddedTitles>false</EnableEmbeddedTitles>
+  <EnableAudioResume>false</EnableAudioResume>
+  <AutomaticRefreshIntervalDays>0</AutomaticRefreshIntervalDays>
+  <PreferredMetadataLanguage>en</PreferredMetadataLanguage>
+  <PreferredImageLanguage />
+  <ContentType>music</ContentType>
+  <MetadataCountryCode>IL</MetadataCountryCode>
+  <SeasonZeroDisplayName>Specials</SeasonZeroDisplayName>
+  <Name>Music</Name>
+  <MetadataSavers />
+  <DisabledLocalMetadataReaders />
+  <LocalMetadataReaderOrder>
+    <string>Nfo</string>
+  </LocalMetadataReaderOrder>
+  <DisabledLyricsFetchers />
+  <SaveLyricsWithMedia>true</SaveLyricsWithMedia>
+  <LyricsDownloadMaxAgeDays>180</LyricsDownloadMaxAgeDays>
+  <LyricsFetcherOrder />
+  <LyricsDownloadLanguages />
+  <DisabledSubtitleFetchers />
+  <SubtitleFetcherOrder />
+  <SkipSubtitlesIfEmbeddedSubtitlesPresent>false</SkipSubtitlesIfEmbeddedSubtitlesPresent>
+  <SkipSubtitlesIfAudioTrackMatches>false</SkipSubtitlesIfAudioTrackMatches>
+  <SubtitleDownloadLanguages />
+  <SubtitleDownloadMaxAgeDays>180</SubtitleDownloadMaxAgeDays>
+  <RequirePerfectSubtitleMatch>true</RequirePerfectSubtitleMatch>
+  <SaveSubtitlesWithMedia>true</SaveSubtitlesWithMedia>
+  <ForcedSubtitlesOnly>false</ForcedSubtitlesOnly>
+  <TypeOptions>
+    <TypeOptions>
+      <Type>MusicAlbum</Type>
+      <MetadataFetchers>
+        <string>MusicBrainz</string>
+      </MetadataFetchers>
+      <MetadataFetcherOrder>
+        <string>TheAudioDB</string>
+        <string>MusicBrainz</string>
+      </MetadataFetcherOrder>
+      <ImageFetchers>
+        <string>FanArt</string>
+      </ImageFetchers>
+      <ImageFetcherOrder>
+        <string>MusicBrainz</string>
+        <string>TheAudioDB</string>
+        <string>FanArt</string>
+      </ImageFetcherOrder>
+      <ImageOptions />
+    </TypeOptions>
+    <TypeOptions>
+      <Type>MusicArtist</Type>
+      <MetadataFetchers>
+        <string>MusicBrainz</string>
+      </MetadataFetchers>
+      <MetadataFetcherOrder>
+        <string>TheAudioDB</string>
+        <string>MusicBrainz</string>
+      </MetadataFetcherOrder>
+      <ImageFetchers>
+        <string>FanArt</string>
+      </ImageFetchers>
+      <ImageFetcherOrder>
+        <string>TheAudioDB</string>
+        <string>FanArt</string>
+      </ImageFetcherOrder>
+      <ImageOptions />
+    </TypeOptions>
+    <TypeOptions>
+      <Type>MusicVideo</Type>
+      <MetadataFetchers />
+      <MetadataFetcherOrder>
+        <string>IMVDb</string>
+        <string>TheMovieDb</string>
+      </MetadataFetcherOrder>
+      <ImageFetchers>
+        <string>Screen Grabber</string>
+      </ImageFetchers>
+      <ImageFetcherOrder>
+        <string>TheMovieDb</string>
+        <string>FanArt</string>
+        <string>Screen Grabber</string>
+      </ImageFetcherOrder>
+      <ImageOptions />
+    </TypeOptions>
+    <TypeOptions>
+      <Type>Audio</Type>
+      <MetadataFetchers />
+      <MetadataFetcherOrder />
+      <ImageFetchers>
+        <string>Image Extractor</string>
+      </ImageFetchers>
+      <ImageFetcherOrder>
+        <string>Image Extractor</string>
+      </ImageFetcherOrder>
+      <ImageOptions />
+    </TypeOptions>
+  </TypeOptions>
+  <CollapseSingleItemFolders>false</CollapseSingleItemFolders>
+  <EnableAdultMetadata>false</EnableAdultMetadata>
+  <ImportCollections>false</ImportCollections>
+  <MinCollectionItems>2</MinCollectionItems>
+  <MinResumePct>5</MinResumePct>
+  <MaxResumePct>90</MaxResumePct>
+  <MinResumeDurationSeconds>120</MinResumeDurationSeconds>
+  <ThumbnailImagesIntervalSeconds>-1</ThumbnailImagesIntervalSeconds>
+  <SampleIgnoreSize>314572800</SampleIgnoreSize>
+</LibraryOptions>

@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<PluginConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <BackupDirectory>C:\Users\gadol\Dropbox\Private\Emby\</BackupDirectory>
+  <BackupRetention>5</BackupRetention>
+</PluginConfiguration>

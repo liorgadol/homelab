@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<EncodingOptions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <EncodingThreadCount>-1</EncodingThreadCount>
+  <TranscodingTempPath />
+  <DownMixAudioBoost>2</DownMixAudioBoost>
+  <EnableThrottling>true</EnableThrottling>
+  <ThrottleDelaySeconds>180</ThrottleDelaySeconds>
+  <HardwareAccelerationType />
+  <VaapiDevice>/dev/dri/renderD128</VaapiDevice>
+  <H264Crf>23</H264Crf>
+  <H264Preset />
+  <EnableHardwareEncoding>true</EnableHardwareEncoding>
+  <EnableSubtitleExtraction>false</EnableSubtitleExtraction>
+  <HardwareDecodingCodecs>
+    <string>h264</string>
+    <string>vc1</string>
+  </HardwareDecodingCodecs>
+</EncodingOptions>

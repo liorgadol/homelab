@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<LibraryOptions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <EnableArchiveMediaFiles>false</EnableArchiveMediaFiles>
+  <EnablePhotos>true</EnablePhotos>
+  <EnableRealtimeMonitor>true</EnableRealtimeMonitor>
+  <EnableMarkerDetection>false</EnableMarkerDetection>
+  <EnableMarkerDetectionDuringLibraryScan>false</EnableMarkerDetectionDuringLibraryScan>
+  <EnableChapterImageExtraction>false</EnableChapterImageExtraction>
+  <ExtractChapterImagesDuringLibraryScan>false</ExtractChapterImagesDuringLibraryScan>
+  <DownloadImagesInAdvance>false</DownloadImagesInAdvance>
+  <PathInfos>
+    <MediaPathInfo>
+      <Path>/media/camera</Path>
+      <NetworkPath>\\192.168.1.2\Camera</NetworkPath>
+    </MediaPathInfo>
+  </PathInfos>
+  <IgnoreHiddenFiles>false</IgnoreHiddenFiles>
+  <IgnoreFileExtensions />
+  <SaveLocalMetadata>false</SaveLocalMetadata>
+  <SaveMetadataHidden>false</SaveMetadataHidden>
+  <SaveLocalThumbnailSets>false</SaveLocalThumbnailSets>
+  <ImportMissingEpisodes>false</ImportMissingEpisodes>
+  <ImportPlaylists>true</ImportPlaylists>
+  <EnableAutomaticSeriesGrouping>true</EnableAutomaticSeriesGrouping>
+  <EnableEmbeddedTitles>false</EnableEmbeddedTitles>
+  <EnableAudioResume>false</EnableAudioResume>
+  <AutomaticRefreshIntervalDays>0</AutomaticRefreshIntervalDays>
+  <PreferredMetadataLanguage />
+  <PreferredImageLanguage />
+  <ContentType>homevideos</ContentType>
+  <MetadataCountryCode />
+  <SeasonZeroDisplayName>Specials</SeasonZeroDisplayName>
+  <Name>Photos</Name>
+  <MetadataSavers />
+  <DisabledLocalMetadataReaders />
+  <LocalMetadataReaderOrder>
+    <string>Nfo</string>
+  </LocalMetadataReaderOrder>
+  <DisabledLyricsFetchers />
+  <SaveLyricsWithMedia>true</SaveLyricsWithMedia>
+  <LyricsDownloadMaxAgeDays>0</LyricsDownloadMaxAgeDays>
+  <LyricsFetcherOrder />
+  <LyricsDownloadLanguages />
+  <DisabledSubtitleFetchers />
+  <SubtitleFetcherOrder />
+  <SkipSubtitlesIfEmbeddedSubtitlesPresent>false</SkipSubtitlesIfEmbeddedSubtitlesPresent>
+  <SkipSubtitlesIfAudioTrackMatches>false</SkipSubtitlesIfAudioTrackMatches>
+  <SubtitleDownloadLanguages />
+  <SubtitleDownloadMaxAgeDays>0</SubtitleDownloadMaxAgeDays>
+  <RequirePerfectSubtitleMatch>true</RequirePerfectSubtitleMatch>
+  <SaveSubtitlesWithMedia>true</SaveSubtitlesWithMedia>
+  <ForcedSubtitlesOnly>true</ForcedSubtitlesOnly>
+  <TypeOptions>
+    <TypeOptions>
+      <Type>Video</Type>
+      <MetadataFetchers />
+      <MetadataFetcherOrder />
+      <ImageFetchers>
+        <string>Screen Grabber</string>
+      </ImageFetchers>
+      <ImageFetcherOrder>
+        <string>Screen Grabber</string>
+      </ImageFetcherOrder>
+      <ImageOptions />
+    </TypeOptions>
+  </TypeOptions>
+  <CollapseSingleItemFolders>true</CollapseSingleItemFolders>
+  <EnableAdultMetadata>false</EnableAdultMetadata>
+  <ImportCollections>false</ImportCollections>
+  <MinCollectionItems>2</MinCollectionItems>
+  <MinResumePct>3</MinResumePct>
+  <MaxResumePct>90</MaxResumePct>
+  <MinResumeDurationSeconds>120</MinResumeDurationSeconds>
+  <ThumbnailImagesIntervalSeconds>10</ThumbnailImagesIntervalSeconds>
+  <SampleIgnoreSize>314572800</SampleIgnoreSize>
+</LibraryOptions>

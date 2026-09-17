@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<UserPolicy xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <IsAdministrator>false</IsAdministrator>
+  <IsHidden>false</IsHidden>
+  <IsHiddenRemotely>true</IsHiddenRemotely>
+  <IsHiddenFromUnusedDevices>false</IsHiddenFromUnusedDevices>
+  <IsDisabled>false</IsDisabled>
+  <LockedOutDate>0</LockedOutDate>
+  <MaxParentalRating>7</MaxParentalRating>
+  <AllowTagOrRating>false</AllowTagOrRating>
+  <BlockedTags />
+  <IsTagBlockingModeInclusive>false</IsTagBlockingModeInclusive>
+  <IncludeTags />
+  <EnableUserPreferenceAccess>true</EnableUserPreferenceAccess>
+  <AccessSchedules />
+  <BlockUnratedItems>
+    <UnratedItem>Movie</UnratedItem>
+  </BlockUnratedItems>
+  <EnableRemoteControlOfOtherUsers>false</EnableRemoteControlOfOtherUsers>
+  <EnableSharedDeviceControl>true</EnableSharedDeviceControl>
+  <EnableRemoteAccess>true</EnableRemoteAccess>
+  <EnableLiveTvManagement>false</EnableLiveTvManagement>
+  <EnableLiveTvAccess>false</EnableLiveTvAccess>
+  <EnableMediaPlayback>true</EnableMediaPlayback>
+  <EnableAudioPlaybackTranscoding>true</EnableAudioPlaybackTranscoding>
+  <EnableVideoPlaybackTranscoding>true</EnableVideoPlaybackTranscoding>
+  <EnablePlaybackRemuxing>true</EnablePlaybackRemuxing>
+  <EnableContentDeletion>false</EnableContentDeletion>
+  <RestrictedFeatures />
+  <EnableContentDeletionFromFolders />
+  <EnableContentDownloading>true</EnableContentDownloading>
+  <EnableSubtitleDownloading>false</EnableSubtitleDownloading>
+  <EnableSubtitleManagement>false</EnableSubtitleManagement>
+  <EnableSyncTranscoding>true</EnableSyncTranscoding>
+  <EnableMediaConversion>true</EnableMediaConversion>
+  <EnabledChannels />
+  <EnableAllChannels>true</EnableAllChannels>
+  <EnabledFolders>
+    <string>f137a2dd21bbc1b99aa5c0f6bf02a805</string>
+    <string>767bffe4f11c93ef34b805451a696a4e</string>
+  </EnabledFolders>
+  <EnableAllFolders>false</EnableAllFolders>
+  <InvalidLoginAttemptCount>0</InvalidLoginAttemptCount>
+  <EnablePublicSharing>false</EnablePublicSharing>
+  <RemoteClientBitrateLimit>0</RemoteClientBitrateLimit>
+  <AuthenticationProviderId>Emby.Server.Implementations.Library.DefaultAuthenticationProvider</AuthenticationProviderId>
+  <ExcludedSubFolders>
+    <string>7e64e319657a9516ec78490da03edccb_29816</string>
+    <string>52f1cc5cfe5ba8c9452cebe7bca9e026_59341</string>
+  </ExcludedSubFolders>
+  <SimultaneousStreamLimit>0</SimultaneousStreamLimit>
+  <EnabledDevices />
+  <EnableAllDevices>true</EnableAllDevices>
+  <AllowCameraUpload>true</AllowCameraUpload>
+  <AllowSharingPersonalItems>false</AllowSharingPersonalItems>
+</UserPolicy>
