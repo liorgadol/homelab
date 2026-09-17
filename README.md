@@ -55,6 +55,7 @@ Checks for image updates, applies them, and emails on every new version found. R
 - Pulls and recreates containers automatically, pruning the old images
 - Excluded from its own auto-update trigger (`wud.trigger.exclude=docker.local`): WUD 9.0.2 has no self-update guard and would stop its own container mid-swap. Bump it manually with `docker compose pull wud && docker compose up -d wud`
 - Sends one email per detected update (SMTP, Gmail)
+- Authenticates to ghcr with a GitHub PAT (`read:packages`); anonymous tag-list queries against large repos such as Immich return HTTP 429 and the check is skipped
 - See [Updates](#updates) for per-container opt-outs
 
 ### 🔒 WireGuard (wg-easy)
@@ -134,6 +135,10 @@ WUD_EMAIL_TO=notify_address
 # WUD Configuration
 WUD_AUTH_ADMIN_PASSWORD=your_secure_password
 
+# GitHub Container Registry (read:packages PAT, avoids ghcr rate limiting)
+GHCR_USERNAME=your_github_username
+GHCR_TOKEN=ghp_your_read_packages_token
+
 # Cameras (go2rtc / splitcam)
 CAMERA_USER=camera_username
 CAMERA_PASSWORD=camera_password
@@ -158,6 +163,7 @@ SMB_PASS=nas_password
 - `HOMEPAGE_ALLOWED_HOSTS`: Allowed hostnames for Homepage (leave empty for all)
 - `FILEBROWSER_USERNAME`: FileBrowser username (default: admin)
 - `FILEBROWSER_PASSWORD`: FileBrowser password
+- `GHCR_USERNAME`, `GHCR_TOKEN`: GitHub username and a PAT with `read:packages` scope, used by WUD to avoid ghcr rate limiting
 - `WUD_EMAIL_USER`, `WUD_EMAIL_PASSWORD`, `WUD_EMAIL_FROM`, `WUD_EMAIL_TO`: SMTP notification settings for WUD (Gmail). These are read by Docker Compose on the host and substituted into the `WUD_TRIGGER_SMTP_GMAIL_*` variables; WUD itself never sees them under these names.
 
 Note: several containers (WUD, wg-easy, Emby) have `TZ=Asia/Jerusalem` hardcoded in `docker-compose.yml`. Pinchflat reuses `PIHOLE_TZ`.

@@ -136,6 +136,15 @@ services:
       # the label wud.trigger.exclude=docker.local (monitor-only).
       - WUD_TRIGGER_DOCKER_LOCAL_PRUNE=true
 
+      # Authenticate to ghcr: anonymous tag-list queries on large repos
+      # (immich) hit HTTP 429 and the container check is skipped.
+      - WUD_REGISTRY_GHCR_PUBLIC_USERNAME=${GHCR_USERNAME}
+      - WUD_REGISTRY_GHCR_PUBLIC_TOKEN=${GHCR_TOKEN}
+
+      # Silence the per-image "watching digest may be throttled" warning,
+      # which WATCHDIGESTDEFAULT=true emits for every Docker Hub image.
+      - WUD_REGISTRY_HUB_PUBLIC_SUPPRESSDIGESTWATCHWARNING=true
+
       # Email trigger. ONCE defaults to true: one mail per detected update.
       - WUD_TRIGGER_SMTP_GMAIL_HOST=smtp.gmail.com
       - WUD_TRIGGER_SMTP_GMAIL_PORT=587
