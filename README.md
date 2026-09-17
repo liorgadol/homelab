@@ -50,7 +50,7 @@ Checks for image updates, applies them, and emails on every new version found. R
 - Access at: `http://localhost:3033` (container listens on 3000)
 - Basic auth: user `admin`, password from `WUD_AUTH_ADMIN_PASSWORD`
 - State stored in: `./wud/data`
-- Scans every 30 minutes (`WUD_WATCHER_LOCAL_CRON`)
+- Scans every 2 hours (`WUD_WATCHER_LOCAL_CRON=0 */2 * * *`)
 - Watches digests as well as tags (`WATCHDIGESTDEFAULT=true`), required to detect updates on `:latest`
 - Pulls and recreates containers automatically, pruning the old images
 - Excluded from its own auto-update trigger (`wud.trigger.exclude=docker.local`): WUD 9.0.2 has no self-update guard and would stop its own container mid-swap. Bump it manually with `docker compose pull wud && docker compose up -d wud`
@@ -395,7 +395,7 @@ Check the RTSP URL works directly (`ffprobe rtsp://user:pass@ip:554/stream1`), a
 
 ## Updates
 
-WUD scans every 30 minutes, emails once per newly detected version, then pulls the new image and recreates the container.
+WUD scans every 2 hours, emails once per newly detected version, then pulls the new image and recreates the container.
 
 Two per-container opt-outs, set as Docker labels:
 

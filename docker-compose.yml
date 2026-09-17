@@ -124,10 +124,11 @@ services:
       - WUD_AUTH_ADMIN_USER=admin
       - WUD_AUTH_ADMIN_PASSWORD=${WUD_AUTH_ADMIN_PASSWORD}
 
-      # Watcher: scan every 30 min, all containers unless labelled wud.watch=false.
+      # Watcher: scan every 2 hours, all containers unless labelled wud.watch=false.
       # WATCHDIGESTDEFAULT=true is required for :latest tags on Docker Hub,
-      # otherwise digest-only updates are never detected.
-      - WUD_WATCHER_LOCAL_CRON=*/30 * * * *
+      # otherwise digest-only updates are never detected; the 2h interval keeps
+      # the resulting manifest queries under Docker Hub's anonymous quota.
+      - WUD_WATCHER_LOCAL_CRON=0 */2 * * *
       - WUD_WATCHER_LOCAL_WATCHBYDEFAULT=true
       - WUD_WATCHER_LOCAL_WATCHDIGESTDEFAULT=true
 
