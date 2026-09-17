@@ -1,5 +1,6 @@
 # Environment variables with sensitive data
 .env
+.env.*
 .DS_Store
 
 # Docker volumes data
