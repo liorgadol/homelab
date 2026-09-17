@@ -121,7 +121,7 @@ services:
       - "wud.trigger.exclude=docker.local"
     environment:
       - TZ=Asia/Jerusalem
-      - WUD_AUTH_ADMIN_USER=admin
+      - WUD_AUTH_ADMIN_USER=gadol
       - WUD_AUTH_ADMIN_PASSWORD=${WUD_AUTH_ADMIN_PASSWORD}
 
       # Watcher: scan every 2 hours, all containers unless labelled wud.watch=false.

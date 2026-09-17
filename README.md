@@ -48,7 +48,7 @@ Self-hosted PDF manipulation tools (merge, split, convert, etc.).
 **Port:** 3033  
 Checks for image updates, applies them, and emails on every new version found. Replaces Watchtower.
 - Access at: `http://localhost:3033` (container listens on 3000)
-- Basic auth: user `admin`, password from `WUD_AUTH_ADMIN_PASSWORD`
+- Basic auth: user `gadol`, password from `WUD_AUTH_ADMIN_PASSWORD`
 - State stored in: `./wud/data`
 - Scans every 2 hours (`WUD_WATCHER_LOCAL_CRON=0 */2 * * *`)
 - Watches digests as well as tags (`WATCHDIGESTDEFAULT=true`), required to detect updates on `:latest`
@@ -441,7 +441,7 @@ real credentials without waiting for an update:
 
 ```bash
 P=$(grep '^WUD_AUTH_ADMIN_PASSWORD=' .env | cut -d= -f2-)
-curl -s -u "admin:$P" \
+curl -s -u "gadol:$P" \
   -X POST http://localhost:3033/api/triggers/smtp/gmail \
   -H 'Content-Type: application/json' \
   -d '{"name":"email-test","watcher":"local","updateKind":{"kind":"tag","localValue":"1.0.0","remoteValue":"1.0.1","semverDiff":"patch"},"result":{}}'
@@ -490,8 +490,8 @@ the affected containers, or delete their entries and rescan:
 
 ```bash
 P=$(grep '^WUD_AUTH_ADMIN_PASSWORD=' .env | cut -d= -f2-)
-curl -s -u "admin:$P" -X DELETE http://localhost:3033/api/containers/<id>
-curl -s -u "admin:$P" -X POST http://localhost:3033/api/containers/watch
+curl -s -u "gadol:$P" -X DELETE http://localhost:3033/api/containers/<id>
+curl -s -u "gadol:$P" -X POST http://localhost:3033/api/containers/watch
 ```
 
 **The container list is only as current as the last scan.** Recreating a container gives
@@ -501,7 +501,7 @@ container itself after a `docker compose up -d wud`. Force a scan rather than wa
 
 ```bash
 P=$(grep '^WUD_AUTH_ADMIN_PASSWORD=' .env | cut -d= -f2-)
-curl -s -u "admin:$P" -X POST http://localhost:3033/api/containers/watch
+curl -s -u "gadol:$P" -X POST http://localhost:3033/api/containers/watch
 ```
 
 **The WUD website documents `main`, not the released image.** Options that exist there
