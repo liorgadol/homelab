@@ -54,7 +54,7 @@ Checks for image updates, applies them, and emails on every new version found. R
 - Watches digests as well as tags (`WATCHDIGESTDEFAULT=true`), required to detect updates on `:latest`
 - Pulls and recreates containers automatically, pruning the old images
 - Excluded from its own auto-update trigger (`wud.trigger.exclude=docker.local`): WUD 9.0.2 has no self-update guard and would stop its own container mid-swap. Bump it manually with `docker compose pull wud && docker compose up -d wud`
-- Sends one email per detected update (SMTP, Gmail)
+- Sends one email per detected update (Gmail, implicit TLS on port 465 — see [Testing email](#testing-email))
 - Authenticates to ghcr with a GitHub PAT (`read:packages`); anonymous tag-list queries against large repos such as Immich return HTTP 429 and the check is skipped
 - See [Updates](#updates) for per-container opt-outs
 
@@ -421,7 +421,37 @@ labels:
   - "wud.watch=false"
 ```
 
-The Cutter services carry this one because they are built locally and have no registry to check.
+Five containers carry this label:
+
+| container | reason |
+|---|---|
+| `cutter_backend`, `cutter_frontend` | built locally, no registry to check |
+| `immich_nginx_proxy` | plain `nginx:alpine`; was already excluded under Watchtower |
+| `immich_redis` | pinned `valkey:9@sha256:...`; Immich bumps it with its own releases |
+| `immich_postgres` | pinned `postgres:14-...@sha256:...`; a major bump will not start against an older data directory |
+
+Watchtower ignored the two pinned database images for free — a `@sha256:` reference is
+immutable, so there was never anything to update. WUD reads the *tag* instead and would
+find `valkey:10` or `postgres:15` as candidates, so the label is doing real work here.
+
+### Testing email
+
+The SMTP trigger can be fired by hand against a made-up container, which exercises the
+real credentials without waiting for an update:
+
+```bash
+P=$(grep '^WUD_AUTH_ADMIN_PASSWORD=' .env | cut -d= -f2-)
+curl -s -u "admin:$P" \
+  -X POST http://localhost:3033/api/triggers/smtp/gmail \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"email-test","watcher":"local","updateKind":{"kind":"tag","localValue":"1.0.0","remoteValue":"1.0.1","semverDiff":"patch"},"result":{}}'
+```
+
+An empty response plus `Trigger executed with success` in `docker logs wud` means the mail
+was accepted by Gmail. This bypasses the `once` bookkeeping, so it does not disturb real
+notification state. Note that a healthy-looking `[trigger.smtp.gmail] Register with
+configuration {...}` line at startup proves nothing — registration only validates the
+shape of the config, never that mail can be delivered.
 
 ### Rolling major tags (Immich)
 
@@ -461,6 +491,16 @@ the affected containers, or delete their entries and rescan:
 ```bash
 P=$(grep '^WUD_AUTH_ADMIN_PASSWORD=' .env | cut -d= -f2-)
 curl -s -u "admin:$P" -X DELETE http://localhost:3033/api/containers/<id>
+curl -s -u "admin:$P" -X POST http://localhost:3033/api/containers/watch
+```
+
+**The container list is only as current as the last scan.** Recreating a container gives
+it a new id, and WUD matches on id, so a freshly recreated container is missing from the
+UI and the API until the next scan at the top of an even hour. This applies to the `wud`
+container itself after a `docker compose up -d wud`. Force a scan rather than waiting:
+
+```bash
+P=$(grep '^WUD_AUTH_ADMIN_PASSWORD=' .env | cut -d= -f2-)
 curl -s -u "admin:$P" -X POST http://localhost:3033/api/containers/watch
 ```
 
