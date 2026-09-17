@@ -1,6 +1,6 @@
 # Docker Compose Stack
 
-A comprehensive Docker Compose stack featuring essential services for home server management, monitoring, and utilities.
+A comprehensive Docker Compose stack featuring essential services for home server management, monitoring, media, and utilities.
 
 ## Services Overview
 
@@ -12,20 +12,20 @@ Real-time Docker container log viewer with a clean web interface.
 ### 📁 FileBrowser
 **Port:** 8081  
 Web-based file manager for browsing and managing files.
-- Access at: `http://localhost:8081`
+- Access at: `http://localhost:8081` (container listens on 8070)
 - Files served from: `./filebrowser/data`
 
 ### 🏠 Homepage
 **Port:** 3000  
 Customizable dashboard for organizing your services and links.
 - Access at: `http://localhost:3000`
-- Configuration: `./homepage/config`
+- Configuration: `./homepage/config`, custom icons: `./homepage/icons`
 
 ### 🛡️ Pi-hole
-**Ports:** 53 (DNS), 80 (HTTP), 443 (HTTPS)  
+**Ports:** 53 (DNS, TCP+UDP), 80 (HTTP)  
 Network-wide ad blocker and DNS server.
-- Web interface: `http://localhost:80/admin`
-- Blocks ads and tracking at the DNS level
+- Web interface: `http://localhost/admin`
+- Query log retention: 30 days (`MAXDBDAYS`)
 
 ### 📺 Pinchflat
 **Port:** 8945  
@@ -36,7 +36,7 @@ YouTube downloader and subscription manager.
 ### 🐳 Dockhand
 **Port:** 3001  
 Docker container management UI for monitoring and managing containers.
-- Access at: `http://localhost:3001`
+- Access at: `http://localhost:3001` (container listens on 3000)
 
 ### 📄 Stirling PDF
 **Port:** 8090  
@@ -46,14 +46,37 @@ Self-hosted PDF manipulation tools (merge, split, convert, etc.).
 
 ### 🔄 Watchtower
 Automatically updates running Docker containers.
+- Image: `nickfedor/watchtower` (maintained fork of containrrr/watchtower)
 - Checks for updates every 30 minutes (1800 seconds)
 - Automatically cleans up old images
-- Sends update notifications by email
+- Sends update notifications by email (shoutrrr SMTP)
+
+### 🔔 WUD (What's up Docker)
+**Port:** 3033  
+Container update checker/notifier — reports which images have newer tags available.
+- Access at: `http://localhost:3033` (container listens on 3000)
+- Basic auth: user `admin`, password from `WUD_AUTH_ADMIN_PASSWORD`
+- State stored in: `./wud/data`
 
 ### 🔒 WireGuard (wg-easy)
 **Ports:** 51820 (VPN, UDP), 51821 (Web UI, TCP)  
 Self-hosted VPN server with a web UI for managing peers.
 - Web UI: `http://localhost:51821`
+- `WG_HOST` is set in `docker-compose.yml` — change it to your own public hostname/IP
+
+### 📹 go2rtc (splitcam)
+**Ports:** 1984 (Web UI/API), 8554 (RTSP), 8555 (WebRTC, TCP+UDP)  
+Camera stream server that re-publishes RTSP cameras as WebRTC/RTSP/HLS.
+- Web UI: `http://localhost:1984`
+- Config: `./splitcam/config/go2rtc.yaml` (two streams, `camera1` and `camera2`)
+- Camera credentials and IPs come from the `CAMERA_*` environment variables
+- WebRTC candidates are hardcoded to `192.168.1.200:8555` in the config — update for your host
+
+### 🖥️ Splitcam web
+**Port:** 8082  
+Static camera viewer (nginx) that proxies `/api/` to go2rtc.
+- Access at: `http://localhost:8082`
+- Served from: `./splitcam/index.html`, nginx config `./splitcam/nginx.conf`
 
 ### ✂️ Cutter
 **Port:** 8083  
@@ -63,15 +86,27 @@ Image background removal (rembg) and print bleed tool. Built from source in `./c
 - First build downloads the `u2net` model (~170MB) and bakes it into the image (~3-5 min)
 - Excluded from Watchtower updates (locally built images)
 
+### 🎬 Emby
+**Ports:** 8096 (HTTP), 8920 (HTTPS)  
+Media server with hardware transcoding and CIFS/SMB media libraries.
+- Access at: `http://localhost:8096`
+- Config: `./emby/config`
+- Hardware transcode via `/dev/dri` — remove the `devices:` block if the host has no iGPU
+- `GIDLIST=1000,44,993` maps the container user into the host `video` (44) and `render` (993) groups; check your host's group IDs with `getent group video render`
+- Libraries are named Docker volumes mounted over CIFS from `//192.168.1.2` (Movies, Movies 2, Movies 3, Movies 4, Movies 4k, Series, Music, Camera)
+
 ### 📊 Glances
 **Port:** 61208  
 System monitoring dashboard (CPU, memory, disk, containers).
 - Access at: `http://localhost:61208`
+- Runs with `pid: host` and a read-only Docker socket
 
 ## Prerequisites
 
 - Docker Engine 20.10+
 - Docker Compose v2.0+
+- `cifs-utils` on the host (required for the Emby media volumes)
+- An iGPU at `/dev/dri` for Emby hardware transcoding (optional)
 
 ## Environment Variables
 
@@ -96,6 +131,19 @@ WATCHTOWER_EMAIL_USER=your_gmail_address
 WATCHTOWER_EMAIL_PASSWORD=your_gmail_app_password
 WATCHTOWER_EMAIL_FROM=your_gmail_address
 WATCHTOWER_EMAIL_TO=notify_address
+
+# WUD Configuration
+WUD_AUTH_ADMIN_PASSWORD=your_secure_password
+
+# Cameras (go2rtc / splitcam)
+CAMERA_USER=camera_username
+CAMERA_PASSWORD=camera_password
+CAMERA1_IP=192.168.1.x
+CAMERA2_IP=192.168.1.y
+
+# Emby media shares (CIFS/SMB)
+SMB_USER=nas_username
+SMB_PASS=nas_password
 ```
 
 ### Required Variables:
@@ -103,12 +151,17 @@ WATCHTOWER_EMAIL_TO=notify_address
 - `PIHOLE_WEBPASSWORD`: Password for Pi-hole admin interface
 - `PIHOLE_SERVERIP`: Your server's IP address
 - `WIREGUARD_PASS_HASH`: bcrypt hash for wg-easy web UI password
+- `WUD_AUTH_ADMIN_PASSWORD`: Password for the WUD web UI
+- `CAMERA_USER`, `CAMERA_PASSWORD`, `CAMERA1_IP`, `CAMERA2_IP`: RTSP credentials and addresses for go2rtc
+- `SMB_USER`, `SMB_PASS`: Credentials for the CIFS shares backing the Emby libraries
 
 ### Optional Variables:
 - `HOMEPAGE_ALLOWED_HOSTS`: Allowed hostnames for Homepage (leave empty for all)
 - `FILEBROWSER_USERNAME`: FileBrowser username (default: admin)
 - `FILEBROWSER_PASSWORD`: FileBrowser password
 - `WATCHTOWER_EMAIL_USER`, `WATCHTOWER_EMAIL_PASSWORD`, `WATCHTOWER_EMAIL_FROM`, `WATCHTOWER_EMAIL_TO`: SMTP notification settings for Watchtower (Gmail)
+
+Note: several containers (WUD, wg-easy, Emby) have `TZ=Asia/Jerusalem` hardcoded in `docker-compose.yml`. Pinchflat reuses `PIHOLE_TZ`.
 
 ## Quick Start
 
@@ -138,26 +191,40 @@ The stack will create the following directories for persistent data:
 ├── docker-compose.yml
 ├── .env
 ├── README.md
+├── cutter/                 # Cutter source (Dockerfile.backend, Dockerfile.frontend, frontend/)
+├── dockhand/
+│   └── data/
+├── emby/
+│   └── config/
 ├── filebrowser/
 │   ├── config/
 │   ├── data/
 │   └── database/
 ├── homepage/
-│   └── config/
+│   ├── config/
+│   └── icons/
 ├── pihole/
 │   ├── etc-pihole/
 │   └── etc-dnsmasq.d/
 ├── pinchflat/
 │   ├── config/
 │   └── downloads/
+├── scripts/
+│   └── emby-backup.sh
+├── splitcam/
+│   ├── config/go2rtc.yaml
+│   ├── index.html
+│   └── nginx.conf
 ├── stirlingtools/
 │   ├── configs/
 │   └── customFiles/
-├── dockhand/
-│   └── data/
-└── wgeasy/
-    └── config/
+├── wgeasy/
+│   └── config/
+└── wud/
+    └── data/
 ```
+
+Emby media libraries are not directories here — they are named Docker volumes mounted from the NAS over CIFS.
 
 ## Management Commands
 
@@ -183,6 +250,12 @@ docker compose pull
 docker compose up -d
 ```
 
+### Rebuild the locally built services (Cutter)
+```bash
+docker compose build cutter-backend cutter-frontend
+docker compose up -d cutter-backend cutter-frontend
+```
+
 ### View logs
 ```bash
 # All services
@@ -203,9 +276,15 @@ docker compose logs -f dozzle
 | Pinchflat | http://localhost:8945 | YouTube downloader |
 | Dockhand | http://localhost:3001 | Docker management |
 | Stirling PDF | http://localhost:8090 | PDF tools |
+| WUD | http://localhost:3033 | Image update checker |
 | wg-easy | http://localhost:51821 | WireGuard VPN management |
+| go2rtc | http://localhost:1984 | Camera stream server |
+| Splitcam web | http://localhost:8082 | Camera viewer |
 | Cutter | http://localhost:8083 | Background removal / bleed |
+| Emby | http://localhost:8096 | Media server |
 | Glances | http://localhost:61208 | System monitoring |
+
+Non-HTTP ports: Pi-hole DNS on 53/tcp+udp, WireGuard on 51820/udp, go2rtc RTSP on 8554 and WebRTC on 8555/tcp+udp, Emby HTTPS on 8920.
 
 ## Port Conflicts
 
@@ -232,6 +311,33 @@ Important directories to backup:
 - `./stirlingtools/configs/` - Stirling PDF settings
 - `./dockhand/data/` - Dockhand configuration
 - `./wgeasy/config/` - WireGuard peer configs and keys
+- `./wud/data/` - WUD state
+- `./splitcam/config/` - go2rtc stream definitions
+- `./emby/config/` - Emby settings, library definitions and metadata
+
+### Emby config backup script
+
+`scripts/emby-backup.sh` stops Emby, tars the whole config tree, verifies the archive, restarts the container and prunes old archives.
+
+```bash
+sudo ./scripts/emby-backup.sh
+```
+
+Defaults (override with environment variables):
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `CONFIG_DIR` | `/opt/docker/homelab/emby/config` | Emby config tree to archive |
+| `BACKUP_DIR` | `/mnt/emby_backup` | Where archives and `emby-backup.log` are written |
+| `CONTAINER` | `emby` | Container to stop/start |
+| `KEEP` | `3` | Number of archives to retain |
+| `STOP_TIMEOUT` | `60` | Seconds to wait for a clean shutdown |
+
+Must run as root. Example cron entry (daily at 04:00):
+
+```cron
+0 4 * * * /opt/docker/homelab/scripts/emby-backup.sh
+```
 
 ## Troubleshooting
 
@@ -257,22 +363,47 @@ docker compose up -d [service_name]
 1. Configure your router or devices to use Pi-hole's IP as DNS server
 2. Set Pi-hole's IP to your server's IP address in the `.env` file
 
+### Emby media volumes won't mount
+CIFS volumes are mounted by the Docker daemon at container start, so a bad credential or an unreachable NAS shows up as a failure to start Emby.
+```bash
+docker compose logs emby
+docker volume inspect homelab_movies
+```
+Check that `cifs-utils` is installed, `SMB_USER`/`SMB_PASS` are correct, and the share names in `docker-compose.yml` match the NAS. Removing a volume requires `docker compose down` first, then `docker volume rm`.
+
+### Emby hardware transcoding fails
+Verify `/dev/dri` exists on the host and that the `GIDLIST` values match the host's `video` and `render` groups:
+```bash
+ls -l /dev/dri
+getent group video render
+```
+
+### Camera streams show no video
+```bash
+docker compose logs go2rtc
+```
+Check the RTSP URL works directly (`ffprobe rtsp://user:pass@ip:554/stream1`), and update the WebRTC `candidates` in `splitcam/config/go2rtc.yaml` to the host's LAN IP.
+
 ## Security Considerations
 
 - Change all default passwords immediately
-- Pi-hole runs on standard HTTP/HTTPS ports (80/443) - consider using a reverse proxy
+- Pi-hole runs on the standard HTTP port (80) - consider using a reverse proxy
 - Stirling PDF has security disabled - enable if exposing to internet
 - Consider placing services behind a VPN if accessing remotely (wg-easy is included for this)
-- Several services (Dozzle, Homepage, Dockhand, Watchtower, Glances) mount `/var/run/docker.sock` directly - anyone with access to those containers has effective root on the host
+- Several services (Dozzle, Homepage, Dockhand, Watchtower, WUD, Glances) mount `/var/run/docker.sock` - anyone with access to those containers has effective root on the host
+- go2rtc's API is configured with `origin: "*"` and no authentication - do not expose port 1984 to the internet
+- Camera and NAS credentials live in `.env` and are interpolated into stream URLs and mount options - keep `.env` out of version control (it is already in `.gitignore`)
 
 ## Updates
 
-Watchtower automatically checks for and applies updates every 30 minutes. To disable automatic updates for a specific service, add this label:
+Watchtower automatically checks for and applies updates every 30 minutes. WUD tracks available updates without applying them. To disable automatic updates for a specific service, add this label:
 
 ```yaml
 labels:
   - "com.centurylinklabs.watchtower.enable=false"
 ```
+
+The Cutter services already carry this label because they are built locally.
 
 ## License
 
@@ -284,6 +415,9 @@ This stack uses various open-source projects. Please refer to each project's lic
 - [Pinchflat](https://github.com/kieraneglin/pinchflat)
 - [Dockhand](https://github.com/fnsys/dockhand)
 - [Stirling PDF](https://github.com/Stirling-Tools/Stirling-PDF)
-- [Watchtower](https://github.com/containrrr/watchtower)
+- [Watchtower](https://github.com/nicholas-fedor/watchtower)
+- [WUD](https://github.com/getwud/wud)
 - [wg-easy](https://github.com/wg-easy/wg-easy)
+- [go2rtc](https://github.com/AlexxIT/go2rtc)
+- [Emby](https://emby.media)
 - [Glances](https://github.com/nicolargo/glances)
