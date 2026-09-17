@@ -423,6 +423,54 @@ labels:
 
 The Cutter services carry this one because they are built locally and have no registry to check.
 
+### Rolling major tags (Immich)
+
+Immich runs `ghcr.io/immich-app/immich-server:v3` — a rolling tag that is repointed at
+each release rather than renamed. WUD skips digest checking for any tag it can parse as
+semver, and `v3` coerces to `3.0.0`, so it would compare `v3` to `v3` forever and never
+report an update. A `wud.watch.digest=true` label does not help: that check lives inside
+an `if (!isSemver)` branch in the watcher.
+
+The fix is to make the tag unparseable as semver, which the transform runs early enough
+to do:
+
+```yaml
+labels:
+  - "wud.trigger.exclude=docker.local"
+  - 'wud.tag.transform=^v\d+()$$ => rolling$$1'
+```
+
+`v3` transforms to `rolling`, which has no digits and so is not semver, and digest
+watching switches on. The real tag is untouched — only the semver test sees the
+transformed value. The empty `()` matters: the transform function throws and silently
+falls back to the original tag when the replacement has no `$N` placeholder, so
+`^v3$ => rolling` does nothing at all. Note also that *any* digit makes a tag semver,
+so `rolling-3` would not work either.
+
+These labels live in Immich's own compose file at `/opt/docker/immich`, not in this repo.
+
+## Maintenance notes
+
+**WUD never revises what it already knows about a container.** On each scan it looks the
+container up by id and returns the stored record as-is; settings are only read when a
+container is seen for the first time. Changing `WATCHDIGESTDEFAULT`, registry
+credentials or similar therefore applies to *new* containers only — everything already
+running keeps the behavior it was first parsed with, with no error or warning. Recreate
+the affected containers, or delete their entries and rescan:
+
+```bash
+P=$(grep '^WUD_AUTH_ADMIN_PASSWORD=' .env | cut -d= -f2-)
+curl -s -u "admin:$P" -X DELETE http://localhost:3033/api/containers/<id>
+curl -s -u "admin:$P" -X POST http://localhost:3033/api/containers/watch
+```
+
+**The WUD website documents `main`, not the released image.** Options that exist there
+may be rejected by the version actually running — `WUD_TRIGGER_DOCKER_LOCAL_SELFUPDATE`
+is documented but unknown to 9.0.2, and made the entire docker trigger fail to register.
+The digest "smart defaults" table does not match the code either. When behavior does not
+match the docs, read the source at the matching tag:
+`https://github.com/getwud/wud/tree/9.0.2/app`.
+
 ## License
 
 This stack uses various open-source projects. Please refer to each project's license:
