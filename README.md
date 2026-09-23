@@ -55,6 +55,7 @@ Checks for image updates, applies them, and emails on every new version found. R
 - Pulls and recreates containers automatically, pruning the old images
 - Excluded from its own auto-update trigger (`wud.trigger.exclude=docker.local`): WUD 9.0.2 has no self-update guard and would stop its own container mid-swap. Bump it manually with `docker compose pull wud && docker compose up -d wud`
 - Sends one email per detected update (Gmail, implicit TLS on port 465 — see [Testing email](#testing-email))
+- Sends one Telegram message per detected update (bot `@the_gadol_bot` — see [Testing Telegram](#testing-telegram))
 - Authenticates to ghcr with a GitHub PAT (`read:packages`); anonymous tag-list queries against large repos such as Immich return HTTP 429 and the check is skipped
 - See [Updates](#updates) for per-container opt-outs
 
@@ -135,6 +136,10 @@ WUD_EMAIL_TO=notify_address
 # WUD Configuration
 WUD_AUTH_ADMIN_PASSWORD=your_secure_password
 
+# WUD Telegram Notifications
+TELEGRAM_BOT_TOKEN=123456789:your_bot_token
+TELEGRAM_CHAT_ID=your_chat_id
+
 # GitHub Container Registry (read:packages PAT, avoids ghcr rate limiting)
 GHCR_USERNAME=your_github_username
 GHCR_TOKEN=ghp_your_read_packages_token
@@ -165,6 +170,7 @@ SMB_PASS=nas_password
 - `FILEBROWSER_PASSWORD`: FileBrowser password
 - `GHCR_USERNAME`, `GHCR_TOKEN`: GitHub username and a PAT with `read:packages` scope, used by WUD to avoid ghcr rate limiting
 - `WUD_EMAIL_USER`, `WUD_EMAIL_PASSWORD`, `WUD_EMAIL_FROM`, `WUD_EMAIL_TO`: SMTP notification settings for WUD (Gmail). These are read by Docker Compose on the host and substituted into the `WUD_TRIGGER_SMTP_GMAIL_*` variables; WUD itself never sees them under these names. Write them literally — WUD passes the username straight to SMTP, so a URL-encoded address such as `liorgadol%40gmail.com` (as Watchtower's shoutrrr URL required) is rejected with `535-5.7.8 Username and Password not accepted`. `WUD_EMAIL_PASSWORD` is a Gmail app password, not the account password.
+- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`: Telegram notification settings for WUD. The token comes from @BotFather. For the chat id, send the bot any message first (a bot cannot message a user who never started it), then read it from `curl -s "https://api.telegram.org/bot$TOKEN/getUpdates" | jq '.result[-1].message.chat.id'`. An empty `result` means the bot has not received a message yet.
 
 Note: several containers (WUD, wg-easy, Emby) have `TZ=Asia/Jerusalem` hardcoded in `docker-compose.yml`. Pinchflat reuses `PIHOLE_TZ`.
 
@@ -452,6 +458,21 @@ was accepted by Gmail. This bypasses the `once` bookkeeping, so it does not dist
 notification state. Note that a healthy-looking `[trigger.smtp.gmail] Register with
 configuration {...}` line at startup proves nothing — registration only validates the
 shape of the config, never that mail can be delivered.
+
+### Testing Telegram
+
+Same approach as email, against the `telegram.bot` trigger:
+
+```bash
+P=$(grep '^WUD_AUTH_ADMIN_PASSWORD=' .env | cut -d= -f2-)
+curl -s -u "gadol:$P" \
+  -X POST http://localhost:3033/api/triggers/telegram/bot \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"telegram-test","watcher":"local","updateKind":{"kind":"tag","localValue":"1.0.0","remoteValue":"1.0.1","semverDiff":"patch"},"result":{}}'
+```
+
+A message on the phone plus `Trigger executed with success` in `docker logs wud` means it
+works. If the trigger fails with `chat not found`, the bot was never started from that chat.
 
 ### Rolling major tags (Immich)
 

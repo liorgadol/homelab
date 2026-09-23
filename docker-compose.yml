@@ -165,6 +165,14 @@ services:
       # still get this mail without being updated.
       - WUD_TRIGGER_SMTP_GMAIL_SIMPLETITLE=✅ $${container.name} updated
       - WUD_TRIGGER_SMTP_GMAIL_SIMPLEBODY=Container $${container.name} was updated to $${container.updateKind.remoteValue}
+
+      # Telegram trigger (id telegram.bot). Same once-per-update behavior and
+      # the same caveat as the email: it fires on detection, not on a
+      # successful pull. WUD escapes the MarkdownV2 itself.
+      - WUD_TRIGGER_TELEGRAM_BOT_BOTTOKEN=${TELEGRAM_BOT_TOKEN}
+      - WUD_TRIGGER_TELEGRAM_BOT_CHATID=${TELEGRAM_CHAT_ID}
+      - WUD_TRIGGER_TELEGRAM_BOT_SIMPLETITLE=✅ $${container.name} updated
+      - WUD_TRIGGER_TELEGRAM_BOT_SIMPLEBODY=$${container.name} → $${container.updateKind.remoteValue}
     healthcheck:
       test: curl --fail http://localhost:3000/health || exit 1
       interval: 30s
