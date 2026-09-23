@@ -331,7 +331,7 @@ Important directories to backup:
 `scripts/emby-backup.sh` stops Emby, tars the whole config tree, verifies the archive, restarts the container and prunes old archives.
 
 ```bash
-sudo ./scripts/emby-backup.sh
+./scripts/emby-backup.sh
 ```
 
 Defaults (override with environment variables):
@@ -351,7 +351,7 @@ silent. cron does not load the compose `.env`, so the script reads the two Teleg
 `ENV_FILE` itself; values already in the environment take precedence. Without them it logs a
 warning and skips the notification. A failed notification never fails the backup.
 
-Must run as root. Example cron entry (daily at 04:00):
+The root check is disabled: it runs as root or as a user in the `docker` group that can read the whole config tree and write to `BACKUP_DIR`. A file it cannot read fails the tar step, which sends the Telegram alert. Example cron entry (daily at 04:00):
 
 ```cron
 0 4 * * * /opt/docker/homelab/scripts/emby-backup.sh

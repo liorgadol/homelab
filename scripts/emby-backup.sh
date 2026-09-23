@@ -5,7 +5,7 @@
 # Keeps the newest $KEEP archives and deletes older ones.
 # Sends a Telegram message if the backup fails or Emby does not come back up.
 #
-# Usage:  sudo ./emby-backup.sh
+# Usage:  ./emby-backup.sh  (as root, or a user in the docker group that can read the config)
 # Cron:   set it up yourself, e.g. 0 4 * * * /opt/docker/homelab/scripts/emby-backup.sh
 #
 set -euo pipefail
@@ -79,7 +79,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 # --- preflight ---------------------------------------------------------------
-[ "$(id -u)" -eq 0 ] || die "must run as root (config files are owned by uid 1000/root)"
+# [ "$(id -u)" -eq 0 ] || die "must run as root (config files are owned by uid 1000/root)"
 command -v docker >/dev/null || die "docker not found in PATH"
 [ -d "$CONFIG_DIR" ] || die "config dir not found: $CONFIG_DIR"
 [ -d "$BACKUP_DIR" ] || die "backup dir not found (is it mounted?): $BACKUP_DIR"
