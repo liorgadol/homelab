@@ -158,6 +158,13 @@ services:
       - WUD_TRIGGER_SMTP_GMAIL_FROM_ADDRESS=${WUD_EMAIL_FROM}
       - WUD_TRIGGER_SMTP_GMAIL_FROM_NAME=WUD
       - WUD_TRIGGER_SMTP_GMAIL_TO=${WUD_EMAIL_TO}
+      # Mail wording. $$ escapes $ from Compose interpolation so WUD receives
+      # the ${...} placeholders. The mail fires on detection, alongside the
+      # docker.local trigger, so "updated" is not confirmation the pull
+      # succeeded — and containers excluded from docker.local (WUD itself)
+      # still get this mail without being updated.
+      - WUD_TRIGGER_SMTP_GMAIL_SIMPLETITLE=✅ $${container.name} updated
+      - WUD_TRIGGER_SMTP_GMAIL_SIMPLEBODY=Container $${container.name} was updated to $${container.updateKind.remoteValue}
     healthcheck:
       test: curl --fail http://localhost:3000/health || exit 1
       interval: 30s
