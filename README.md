@@ -343,6 +343,13 @@ Defaults (override with environment variables):
 | `CONTAINER` | `emby` | Container to stop/start |
 | `KEEP` | `3` | Number of archives to retain |
 | `STOP_TIMEOUT` | `60` | Seconds to wait for a clean shutdown |
+| `ENV_FILE` | `/opt/docker/homelab/.env` | Where `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are read from |
+
+On any failure (preflight, stop, tar, verification, or an unexpected error) it sends a Telegram
+message with the reason, and a separate one if Emby does not start again afterwards. Success is
+silent. cron does not load the compose `.env`, so the script reads the two Telegram values from
+`ENV_FILE` itself; values already in the environment take precedence. Without them it logs a
+warning and skips the notification. A failed notification never fails the backup.
 
 Must run as root. Example cron entry (daily at 04:00):
 
