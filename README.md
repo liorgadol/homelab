@@ -102,6 +102,15 @@ System monitoring dashboard (CPU, memory, disk, containers).
 - Access at: `http://localhost:61208`
 - Runs with `pid: host` and a read-only Docker socket
 
+### 📈 Uptime Kuma + AutoKuma
+**Port:** 3002  
+Uptime monitoring for every container in this stack, with alerts on Telegram.
+- Access at: `http://localhost:3002` (container listens on 3001; 3001 on the host is Dockhand)
+- State stored in: `./uptime-kuma/data`
+- Image is `louislam/uptime-kuma:2` — `:latest` is still 1.23. See [Rolling major tags](#rolling-major-tags-immich) for the `wud.tag.transform` label that lets WUD update it
+- Monitors, the Telegram notification and the Docker host are **not** created in the UI. AutoKuma (`ghcr.io/bigboot/autokuma`) reads `kuma.*` labels from the containers and syncs them into Uptime Kuma every 5 seconds. Anything created by hand in the UI is left alone
+- See [Monitoring](#monitoring) for first-time setup and how to add a monitor
+
 ## Prerequisites
 
 - Docker Engine 20.10+
@@ -153,6 +162,10 @@ CAMERA2_IP=192.168.1.y
 # Emby media shares (CIFS/SMB)
 SMB_USER=nas_username
 SMB_PASS=nas_password
+
+# Uptime Kuma admin account, used by AutoKuma to log in
+UPTIME_KUMA_USERNAME=admin
+UPTIME_KUMA_PASSWORD=your_secure_password
 ```
 
 ### Required Variables:
@@ -163,6 +176,7 @@ SMB_PASS=nas_password
 - `WUD_AUTH_ADMIN_PASSWORD`: Password for the WUD web UI
 - `CAMERA_USER`, `CAMERA_PASSWORD`, `CAMERA1_IP`, `CAMERA2_IP`: RTSP credentials and addresses for go2rtc
 - `SMB_USER`, `SMB_PASS`: Credentials for the CIFS shares backing the Emby libraries
+- `UPTIME_KUMA_USERNAME`, `UPTIME_KUMA_PASSWORD`: The Uptime Kuma admin account. AutoKuma logs in with it; create the account in the UI with exactly these values
 
 ### Optional Variables:
 - `HOMEPAGE_ALLOWED_HOSTS`: Allowed hostnames for Homepage (leave empty for all)
@@ -170,9 +184,9 @@ SMB_PASS=nas_password
 - `FILEBROWSER_PASSWORD`: FileBrowser password
 - `GHCR_USERNAME`, `GHCR_TOKEN`: GitHub username and a PAT with `read:packages` scope, used by WUD to avoid ghcr rate limiting
 - `WUD_EMAIL_USER`, `WUD_EMAIL_PASSWORD`, `WUD_EMAIL_FROM`, `WUD_EMAIL_TO`: SMTP notification settings for WUD (Gmail). These are read by Docker Compose on the host and substituted into the `WUD_TRIGGER_SMTP_GMAIL_*` variables; WUD itself never sees them under these names. Write them literally — WUD passes the username straight to SMTP, so a URL-encoded address such as `liorgadol%40gmail.com` (as Watchtower's shoutrrr URL required) is rejected with `535-5.7.8 Username and Password not accepted`. `WUD_EMAIL_PASSWORD` is a Gmail app password, not the account password.
-- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`: Telegram notification settings for WUD. The token comes from @BotFather. For the chat id, send the bot any message first (a bot cannot message a user who never started it), then read it from `curl -s "https://api.telegram.org/bot$TOKEN/getUpdates" | jq '.result[-1].message.chat.id'`. An empty `result` means the bot has not received a message yet.
+- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`: Telegram notification settings for WUD and Uptime Kuma. The token comes from @BotFather. For the chat id, send the bot any message first (a bot cannot message a user who never started it), then read it from `curl -s "https://api.telegram.org/bot$TOKEN/getUpdates" | jq '.result[-1].message.chat.id'`. An empty `result` means the bot has not received a message yet.
 
-Note: several containers (WUD, wg-easy, Emby) have `TZ=Asia/Jerusalem` hardcoded in `docker-compose.yml`. Pinchflat reuses `PIHOLE_TZ`.
+Note: several containers (WUD, wg-easy, Emby, Uptime Kuma) have `TZ=Asia/Jerusalem` hardcoded in `docker-compose.yml`. Pinchflat reuses `PIHOLE_TZ`.
 
 ## Quick Start
 
@@ -202,6 +216,8 @@ The stack will create the following directories for persistent data:
 ├── docker-compose.yml
 ├── .env
 ├── README.md
+├── autokuma/
+│   └── data/               # AutoKuma id map — do not delete (see Monitoring)
 ├── cutter/                 # Cutter source (Dockerfile.backend, Dockerfile.frontend, frontend/)
 ├── dockhand/
 │   └── data/
@@ -229,6 +245,8 @@ The stack will create the following directories for persistent data:
 ├── stirlingtools/
 │   ├── configs/
 │   └── customFiles/
+├── uptime-kuma/
+│   └── data/
 ├── wgeasy/
 │   └── config/
 └── wud/
@@ -294,6 +312,7 @@ docker compose logs -f dozzle
 | Cutter | http://localhost:8083 | Background removal / bleed |
 | Emby | http://localhost:8096 | Media server |
 | Glances | http://localhost:61208 | System monitoring |
+| Uptime Kuma | http://localhost:3002 | Uptime monitoring + Telegram alerts |
 
 Non-HTTP ports: Pi-hole DNS on 53/tcp+udp, WireGuard on 51820/udp, go2rtc RTSP on 8554 and WebRTC on 8555/tcp+udp, Emby HTTPS on 8920.
 
@@ -325,6 +344,8 @@ Important directories to backup:
 - `./wud/data/` - WUD state
 - `./splitcam/config/` - go2rtc stream definitions
 - `./emby/config/` - Emby settings, library definitions and metadata
+- `./uptime-kuma/data/` - Uptime Kuma database (monitor history, admin account)
+- `./autokuma/data/` - AutoKuma's map of label ids to Uptime Kuma ids; back it up together with `./uptime-kuma/data/`
 
 ### Emby config backup script
 
@@ -408,9 +429,90 @@ Check the RTSP URL works directly (`ffprobe rtsp://user:pass@ip:554/stream1`), a
 - Pi-hole runs on the standard HTTP port (80) - consider using a reverse proxy
 - Stirling PDF has security disabled - enable if exposing to internet
 - Consider placing services behind a VPN if accessing remotely (wg-easy is included for this)
-- Several services (Dozzle, Homepage, Dockhand, WUD, Glances) mount `/var/run/docker.sock` - anyone with access to those containers has effective root on the host
+- Several services (Dozzle, Homepage, Dockhand, WUD, Glances, Uptime Kuma, AutoKuma) mount `/var/run/docker.sock` - anyone with access to those containers has effective root on the host
 - go2rtc's API is configured with `origin: "*"` and no authentication - do not expose port 1984 to the internet
+- The Telegram bot token is interpolated into an AutoKuma label, so it shows in `docker inspect autokuma` (it is already visible in `docker inspect wud` as an environment variable)
 - Camera and NAS credentials live in `.env` and are interpolated into stream URLs and mount options - keep `.env` out of version control (it is already in `.gitignore`)
+
+## Monitoring
+
+Uptime Kuma checks every container in this stack and sends a Telegram message when one
+goes down and when it comes back. The monitors are defined as labels in
+`docker-compose.yml`; AutoKuma turns them into Uptime Kuma monitors.
+
+Each service has up to two monitors:
+
+| Monitor | Type | What it checks |
+|---|---|---|
+| `<Service>` | Docker container | Container is running (and healthy, if it has a healthcheck), read through the Docker socket |
+| `<Service> web` | HTTP | The web UI answers on `http://192.168.1.200:<port>` with a 2xx after redirects |
+
+Extras: `Pi-hole DNS` resolves `google.com` through Pi-hole on port 53, `WUD web` hits the
+unauthenticated `/health` endpoint (the UI itself answers 401), `Emby web` hits
+`/web/index.html`. `Cutter backend` has no published port, so it only gets the container
+check. AutoKuma monitors its own container; Uptime Kuma does not monitor itself, since it
+could not alert about its own outage.
+
+Every monitor gets the same defaults from `AUTOKUMA__DEFAULT_SETTINGS`: notify the
+`telegram` notification, check containers through the `local` Docker host, and retry twice
+(60s apart) before going down, so a WUD pull-and-recreate does not page.
+
+### First-time setup
+
+AutoKuma cannot create the Uptime Kuma admin account, so the first start is two steps:
+
+1. Add `UPTIME_KUMA_USERNAME` and `UPTIME_KUMA_PASSWORD` to `.env`, then start both:
+   ```bash
+   docker compose up -d uptime-kuma autokuma
+   ```
+2. Open `http://192.168.1.200:3002` and create the admin account with exactly those
+   values. Until then AutoKuma logs `authIncorrectCreds` and keeps retrying. If the sync
+   below shows nothing after a minute, `docker compose restart autokuma`.
+
+Check the sync:
+
+```bash
+docker logs autokuma 2>&1 | grep -E "Creating|WARN|ERROR"
+```
+
+First you see `Creating new notification: telegram` and `Creating new docker_host: local`,
+then one `Creating new ...` per monitor. A few `Cannot create X because referenced
+notification with name telegram is not found` warnings on the first pass are normal —
+monitors are retried after the notification exists.
+
+To test Telegram, open the Telegram notification under **Settings → Notifications** and
+press **Test**, or stop any container for about three minutes.
+
+### Adding a monitor
+
+Add labels to the service and recreate it. The id (`myapp` below) must be unique across
+the whole file; the name is what shows in Uptime Kuma and in the Telegram message.
+
+```yaml
+labels:
+  - "kuma.myapp.docker.name=My App"
+  - "kuma.myapp.docker.docker_container=myapp"
+  - "kuma.myapp-web.http.name=My App web"
+  - "kuma.myapp-web.http.url=http://192.168.1.200:1234/"
+```
+
+What happens to a monitor whose labels disappear is set by `AUTOKUMA__ON_DELETE`
+(`delete` or `keep`). Other monitor types and settings: <https://autokuma.bigboot.dev/dev/entity-types/overview/>.
+
+### Gotchas
+
+- **Do not delete `./autokuma/data`.** It maps label ids to Uptime Kuma ids. Without it
+  AutoKuma creates every monitor, the notification and the Docker host a second time,
+  next to the old ones.
+- **The Telegram config carries `"isDefault":false,"applyExisting":false`** on purpose.
+  Uptime Kuma adds those keys when it stores a notification; if the label leaves them
+  out, AutoKuma sees a difference on every pass and logs `Updating notification:
+  telegram` every 5 seconds forever.
+- **`AUTOKUMA__DEFAULT_SETTINGS` must start on the same line as the `=`.** A leading
+  newline makes AutoKuma exit with `Invalid config: Found invalid config
+  'kuma.default_settings'`.
+- **Change label-managed monitors through the labels, not the UI.** AutoKuma writes the
+  label values back when it sees a difference, as with the notification above.
 
 ## Updates
 
@@ -554,3 +656,5 @@ This stack uses various open-source projects. Please refer to each project's lic
 - [go2rtc](https://github.com/AlexxIT/go2rtc)
 - [Emby](https://emby.media)
 - [Glances](https://github.com/nicolargo/glances)
+- [Uptime Kuma](https://github.com/louislam/uptime-kuma)
+- [AutoKuma](https://github.com/BigBoot/AutoKuma)

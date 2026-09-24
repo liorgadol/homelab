@@ -3,6 +3,11 @@ services:
   dozzle:
     image: amir20/dozzle:latest
     container_name: dozzle
+    labels:
+      - "kuma.dozzle.docker.name=Dozzle"
+      - "kuma.dozzle.docker.docker_container=dozzle"
+      - "kuma.dozzle-web.http.name=Dozzle web"
+      - "kuma.dozzle-web.http.url=http://192.168.1.200:8080/"
     restart: unless-stopped
     ports:
       - "8080:8080"
@@ -16,6 +21,11 @@ services:
   filebrowser:
     image: filebrowser/filebrowser:latest
     container_name: filebrowser
+    labels:
+      - "kuma.filebrowser.docker.name=FileBrowser"
+      - "kuma.filebrowser.docker.docker_container=filebrowser"
+      - "kuma.filebrowser-web.http.name=FileBrowser web"
+      - "kuma.filebrowser-web.http.url=http://192.168.1.200:8081/"
     restart: unless-stopped
     environment:
       - PUID=1000
@@ -31,6 +41,11 @@ services:
   homepage:
     image: ghcr.io/gethomepage/homepage:latest
     container_name: homepage
+    labels:
+      - "kuma.homepage.docker.name=Homepage"
+      - "kuma.homepage.docker.docker_container=homepage"
+      - "kuma.homepage-web.http.name=Homepage web"
+      - "kuma.homepage-web.http.url=http://192.168.1.200:3000/"
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -46,6 +61,15 @@ services:
   # Pi-hole - Network-wide ad blocker
   pihole:
     container_name: pihole
+    labels:
+      - "kuma.pihole.docker.name=Pi-hole"
+      - "kuma.pihole.docker.docker_container=pihole"
+      - "kuma.pihole-web.http.name=Pi-hole web"
+      - "kuma.pihole-web.http.url=http://192.168.1.200:80/admin/"
+      - "kuma.pihole-dns.dns.name=Pi-hole DNS"
+      - "kuma.pihole-dns.dns.hostname=google.com"
+      - "kuma.pihole-dns.dns.dns_resolve_server=192.168.1.200"
+      - "kuma.pihole-dns.dns.port=53"
     image: pihole/pihole:latest
     cap_add:
       - NET_ADMIN
@@ -67,6 +91,11 @@ services:
   pinchflat:
     image: ghcr.io/kieraneglin/pinchflat:latest
     container_name: pinchflat
+    labels:
+      - "kuma.pinchflat.docker.name=Pinchflat"
+      - "kuma.pinchflat.docker.docker_container=pinchflat"
+      - "kuma.pinchflat-web.http.name=Pinchflat web"
+      - "kuma.pinchflat-web.http.url=http://192.168.1.200:8945/"
     restart: unless-stopped
     ports:
       - "8945:8945"
@@ -80,6 +109,11 @@ services:
   dockhand:
     image: fnsys/dockhand:latest
     container_name: dockhand
+    labels:
+      - "kuma.dockhand.docker.name=Dockhand"
+      - "kuma.dockhand.docker.docker_container=dockhand"
+      - "kuma.dockhand-web.http.name=Dockhand web"
+      - "kuma.dockhand-web.http.url=http://192.168.1.200:3001/"
     restart: unless-stopped
     ports:
       - 3001:3000
@@ -91,6 +125,11 @@ services:
   stirling-pdf:
     image: stirlingtools/stirling-pdf
     container_name: stirling-pdf
+    labels:
+      - "kuma.stirling-pdf.docker.name=Stirling PDF"
+      - "kuma.stirling-pdf.docker.docker_container=stirling-pdf"
+      - "kuma.stirling-pdf-web.http.name=Stirling PDF web"
+      - "kuma.stirling-pdf-web.http.url=http://192.168.1.200:8090/"
     restart: unless-stopped
     ports:
       - "8090:8080"
@@ -120,6 +159,10 @@ services:
       # WUD 9.0.2 has no self-update guard: updating itself would stop its own
       # container mid-swap and leave it down. Bump WUD by hand.
       - "wud.trigger.exclude=docker.local"
+      - "kuma.wud.docker.name=WUD"
+      - "kuma.wud.docker.docker_container=wud"
+      - "kuma.wud-web.http.name=WUD web"
+      - "kuma.wud-web.http.url=http://192.168.1.200:3033/health"
     environment:
       - TZ=Asia/Jerusalem
       - WUD_AUTH_ADMIN_USER=gadol
@@ -184,6 +227,11 @@ services:
   wg-easy:
     image: ghcr.io/wg-easy/wg-easy:latest
     container_name: wg-easy
+    labels:
+      - "kuma.wg-easy.docker.name=wg-easy"
+      - "kuma.wg-easy.docker.docker_container=wg-easy"
+      - "kuma.wg-easy-web.http.name=wg-easy web"
+      - "kuma.wg-easy-web.http.url=http://192.168.1.200:51821/"
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
@@ -206,6 +254,11 @@ services:
   glances:
     image: nicolargo/glances:latest
     container_name: glances
+    labels:
+      - "kuma.glances.docker.name=Glances"
+      - "kuma.glances.docker.docker_container=glances"
+      - "kuma.glances-web.http.name=Glances web"
+      - "kuma.glances-web.http.url=http://192.168.1.200:61208/"
     restart: unless-stopped
     pid: host
     ports:
@@ -219,6 +272,11 @@ services:
   go2rtc:
     image: alexxit/go2rtc:latest
     container_name: splitcam_go2rtc
+    labels:
+      - "kuma.go2rtc.docker.name=go2rtc"
+      - "kuma.go2rtc.docker.docker_container=splitcam_go2rtc"
+      - "kuma.go2rtc-web.http.name=go2rtc web"
+      - "kuma.go2rtc-web.http.url=http://192.168.1.200:1984/"
     restart: unless-stopped
     ports:
       - "1984:1984"      # Web UI and API
@@ -245,6 +303,11 @@ services:
   splitcam-web:
     image: nginx:alpine
     container_name: splitcam_camera-web
+    labels:
+      - "kuma.splitcam-web.docker.name=Splitcam web"
+      - "kuma.splitcam-web.docker.docker_container=splitcam_camera-web"
+      - "kuma.splitcam-web-web.http.name=Splitcam web web"
+      - "kuma.splitcam-web-web.http.url=http://192.168.1.200:8082/"
     restart: unless-stopped
     ports:
       - "8082:80"
@@ -269,6 +332,8 @@ services:
     restart: unless-stopped
     labels:
       - "wud.watch=false"
+      - "kuma.cutter-backend.docker.name=Cutter backend"
+      - "kuma.cutter-backend.docker.docker_container=cutter_backend"
     expose:
       - "8000"
     networks:
@@ -285,6 +350,10 @@ services:
       - cutter-backend
     labels:
       - "wud.watch=false"
+      - "kuma.cutter-frontend.docker.name=Cutter"
+      - "kuma.cutter-frontend.docker.docker_container=cutter_frontend"
+      - "kuma.cutter-frontend-web.http.name=Cutter web"
+      - "kuma.cutter-frontend-web.http.url=http://192.168.1.200:8083/"
     ports:
       - "8083:80"
     networks:
@@ -294,6 +363,11 @@ services:
   emby:
     image: emby/embyserver:latest
     container_name: emby
+    labels:
+      - "kuma.emby.docker.name=Emby"
+      - "kuma.emby.docker.docker_container=emby"
+      - "kuma.emby-web.http.name=Emby web"
+      - "kuma.emby-web.http.url=http://192.168.1.200:8096/web/index.html"
     restart: unless-stopped
     environment:
       - UID=1000
@@ -315,6 +389,67 @@ services:
       - series:/media/series
       - music:/media/music
       - camera:/media/camera
+
+  # Uptime Kuma - Uptime monitoring with Telegram alerts. Monitors are not
+  # created in the UI: AutoKuma builds them from the kuma.* labels above.
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    container_name: uptime-kuma
+    restart: unless-stopped
+    labels:
+      # :latest is still 1.x. :2 is a rolling tag that WUD would parse as
+      # semver 2.0.0 and never update; see "Rolling major tags" in README.
+      - 'wud.tag.transform=^\d+()$$ => rolling$$1'
+    ports:
+      - "3002:3001"   # 3001 is taken by Dockhand
+    volumes:
+      - ./uptime-kuma/data:/app/data
+      # Read-only is enough for "Docker Container" monitors
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - TZ=Asia/Jerusalem
+      # Skip the v2 first-run database picker
+      - UPTIME_KUMA_DB_TYPE=sqlite
+
+  # AutoKuma - Syncs kuma.* container labels into Uptime Kuma monitors.
+  # Also owns the Telegram notification and the Docker host entry.
+  autokuma:
+    image: ghcr.io/bigboot/autokuma:latest
+    container_name: autokuma
+    restart: unless-stopped
+    depends_on:
+      - uptime-kuma
+    labels:
+      - "kuma.autokuma.docker.name=AutoKuma"
+      - "kuma.autokuma.docker.docker_container=autokuma"
+
+      # Entities every monitor refers to (see AUTOKUMA__DEFAULT_SETTINGS)
+      - "kuma.local.docker_host.name=Local Docker"
+      - "kuma.local.docker_host.connection_type=socket"
+      - "kuma.local.docker_host.path=/var/run/docker.sock"
+      - "kuma.telegram.notification.name=Telegram"
+      - "kuma.telegram.notification.active=true"
+      # isDefault/applyExisting mirror what Uptime Kuma stores; without them
+      # AutoKuma sees a diff and rewrites the notification every 5 seconds.
+      - 'kuma.telegram.notification.config={"type":"telegram","telegramBotToken":"${TELEGRAM_BOT_TOKEN}","telegramChatID":"${TELEGRAM_CHAT_ID}","isDefault":false,"applyExisting":false}'
+    volumes:
+      # Maps AutoKuma ids to Uptime Kuma ids. Lose it and every monitor,
+      # the notification and the Docker host get created a second time.
+      - ./autokuma/data:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - AUTOKUMA__KUMA__URL=http://uptime-kuma:3001
+      - AUTOKUMA__KUMA__USERNAME=${UPTIME_KUMA_USERNAME}
+      - AUTOKUMA__KUMA__PASSWORD=${UPTIME_KUMA_PASSWORD}
+      # Applied to every generated monitor: alert on Telegram, check
+      # containers through the local socket, and retry twice before
+      # declaring a service down so a WUD recreate does not page.
+      # The first setting must share the line with the "=": a leading
+      # newline fails with "Found invalid config 'kuma.default_settings'".
+      - |-
+        AUTOKUMA__DEFAULT_SETTINGS=*.notification_name_list: ["telegram"]
+        docker.docker_host_name: local
+        *.max_retries: 2
 
 networks:
   camera-net:
