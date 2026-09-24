@@ -441,6 +441,11 @@ services:
       - AUTOKUMA__KUMA__URL=http://uptime-kuma:3001
       - AUTOKUMA__KUMA__USERNAME=${UPTIME_KUMA_USERNAME}
       - AUTOKUMA__KUMA__PASSWORD=${UPTIME_KUMA_PASSWORD}
+      # Keep monitors whose container is gone. The default (delete) drops a
+      # monitor and its history 60s after its container is removed, so a
+      # service left down by an interrupted deploy vanishes instead of
+      # alerting, and comes back later as a new monitor with no history.
+      - AUTOKUMA__ON_DELETE=keep
       # Applied to every generated monitor: alert on Telegram, check
       # containers through the local socket, and retry twice before
       # declaring a service down so a WUD recreate does not page.

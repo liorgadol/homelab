@@ -402,6 +402,21 @@ docker compose up -d [service_name]
 1. Configure your router or devices to use Pi-hole's IP as DNS server
 2. Set Pi-hole's IP to your server's IP address in the `.env` file
 
+### Deploying over WireGuard
+A stack-wide `docker compose up -d` also recreates `wg-easy`. If you are connected through
+that VPN, the tunnel drops, your SSH session dies, and the compose client is killed
+mid-run. Containers it had already recreated are left in the `Created` state: removed and
+replaced, but never started. Nothing shows in the Docker daemon logs. Run deploys inside
+`tmux`, or recreate `wg-easy` last:
+```bash
+docker compose up -d $(docker compose config --services | grep -v '^wg-easy$')
+docker compose up -d wg-easy
+```
+Check for leftovers afterwards; `docker compose up -d` starts them:
+```bash
+docker compose ps -a --filter status=created
+```
+
 ### Emby media volumes won't mount
 CIFS volumes are mounted by the Docker daemon at container start, so a bad credential or an unreachable NAS shows up as a failure to start Emby.
 ```bash
@@ -496,8 +511,9 @@ labels:
   - "kuma.myapp-web.http.url=http://192.168.1.200:1234/"
 ```
 
-What happens to a monitor whose labels disappear is set by `AUTOKUMA__ON_DELETE`
-(`delete` or `keep`). Other monitor types and settings: <https://autokuma.bigboot.dev/dev/entity-types/overview/>.
+Removing the labels, or the service, does **not** delete the monitor:
+`AUTOKUMA__ON_DELETE=keep` is set. Delete it by hand in the UI when a service is retired.
+Other monitor types and settings: <https://autokuma.bigboot.dev/dev/entity-types/overview/>.
 
 ### Gotchas
 
@@ -511,6 +527,13 @@ What happens to a monitor whose labels disappear is set by `AUTOKUMA__ON_DELETE`
 - **`AUTOKUMA__DEFAULT_SETTINGS` must start on the same line as the `=`.** A leading
   newline makes AutoKuma exit with `Invalid config: Found invalid config
   'kuma.default_settings'`.
+- **`AUTOKUMA__ON_DELETE=keep` is deliberate.** With the default (`delete`), AutoKuma
+  deletes a monitor and its whole history about 60 seconds after its container is
+  *removed* (a stopped container is fine). A service left removed by an interrupted
+  deploy (see [Deploying over WireGuard](#deploying-over-wireguard)) would then vanish from
+  Uptime Kuma instead of alerting, and come back later as a new monitor with no history.
+  With `keep`, the monitor goes red, Telegram fires, and the same monitor is reused when
+  the container returns.
 - **Change label-managed monitors through the labels, not the UI.** AutoKuma writes the
   label values back when it sees a difference, as with the notification above.
 
