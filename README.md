@@ -328,6 +328,8 @@ docker compose logs -f dozzle
 | Emby | http://emby.gadol.lan | http://localhost:8096 | Media server |
 | Glances | http://glances.gadol.lan | http://localhost:61208 | System monitoring |
 | Uptime Kuma | http://kuma.gadol.lan | http://localhost:3002 | Uptime monitoring + Telegram alerts |
+| Router | http://router.gadol.lan | http://192.168.1.1 | Not in this stack |
+| Access point | http://ap.gadol.lan | http://192.168.1.150 | Not in this stack |
 
 ### Local DNS names
 

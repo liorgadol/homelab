@@ -76,3 +76,17 @@ http://emby.gadol.lan {
 http://kuma.gadol.lan {
 	reverse_proxy 192.168.1.200:3002
 }
+
+# Network gear outside Docker. Router admin pages often reject a Host
+# header that is not their own IP, so send the IP instead.
+http://router.gadol.lan {
+	reverse_proxy 192.168.1.1:80 {
+		header_up Host {upstream_hostport}
+	}
+}
+
+http://ap.gadol.lan {
+	reverse_proxy 192.168.1.150:80 {
+		header_up Host {upstream_hostport}
+	}
+}
