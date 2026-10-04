@@ -128,8 +128,10 @@ HOMEPAGE_ALLOWED_HOSTS=
 FILEBROWSER_USERNAME=admin
 FILEBROWSER_PASSWORD=changeme
 
+# Timezone for every container
+TZ=Asia/Jerusalem
+
 # Pi-hole Configuration
-PIHOLE_TZ=America/New_York
 PIHOLE_WEBPASSWORD=your_secure_password
 PIHOLE_SERVERIP=192.168.1.100
 
@@ -169,7 +171,7 @@ UPTIME_KUMA_PASSWORD=your_secure_password
 ```
 
 ### Required Variables:
-- `PIHOLE_TZ`: Your timezone (e.g., America/New_York, Europe/London)
+- `TZ`: Timezone for every container (e.g., Asia/Jerusalem, Europe/London). If unset, containers fall back to UTC
 - `PIHOLE_WEBPASSWORD`: Password for Pi-hole admin interface
 - `PIHOLE_SERVERIP`: Your server's IP address
 - `WIREGUARD_PASS_HASH`: bcrypt hash for wg-easy web UI password
@@ -186,7 +188,7 @@ UPTIME_KUMA_PASSWORD=your_secure_password
 - `WUD_EMAIL_USER`, `WUD_EMAIL_PASSWORD`, `WUD_EMAIL_FROM`, `WUD_EMAIL_TO`: SMTP notification settings for WUD (Gmail). These are read by Docker Compose on the host and substituted into the `WUD_TRIGGER_SMTP_GMAIL_*` variables; WUD itself never sees them under these names. Write them literally — WUD passes the username straight to SMTP, so a URL-encoded address such as `liorgadol%40gmail.com` (as Watchtower's shoutrrr URL required) is rejected with `535-5.7.8 Username and Password not accepted`. `WUD_EMAIL_PASSWORD` is a Gmail app password, not the account password.
 - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`: Telegram notification settings for WUD and Uptime Kuma. The token comes from @BotFather. For the chat id, send the bot any message first (a bot cannot message a user who never started it), then read it from `curl -s "https://api.telegram.org/bot$TOKEN/getUpdates" | jq '.result[-1].message.chat.id'`. An empty `result` means the bot has not received a message yet.
 
-Note: several containers (WUD, wg-easy, Emby, Uptime Kuma) have `TZ=Asia/Jerusalem` hardcoded in `docker-compose.yml`. Pinchflat reuses `PIHOLE_TZ`.
+Note: every service reads `TZ` from `.env`. Images without timezone data (nginx:alpine, the cutter images) ignore it and stay on UTC. Glances also mounts the host's `/etc/localtime`.
 
 ## Quick Start
 
