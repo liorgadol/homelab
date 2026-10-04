@@ -330,6 +330,7 @@ docker compose logs -f dozzle
 | Uptime Kuma | http://kuma.gadol.lan | http://localhost:3002 | Uptime monitoring + Telegram alerts |
 | Router | http://router.gadol.lan | http://192.168.1.1 | Not in this stack |
 | Access point | http://ap.gadol.lan | http://192.168.1.150 | Not in this stack |
+| qBittorrent | http://torrent.gadol.lan | http://192.168.1.2:8090 | On the NAS, not in this stack |
 
 ### Local DNS names
 

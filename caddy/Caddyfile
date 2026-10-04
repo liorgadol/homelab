@@ -90,3 +90,13 @@ http://ap.gadol.lan {
 		header_up Host {upstream_hostport}
 	}
 }
+
+# qBittorrent on the NAS. Its CSRF check rejects requests whose Origin or
+# Referer differs from the Host it sees, so send its own address and drop both.
+http://torrent.gadol.lan {
+	reverse_proxy 192.168.1.2:8090 {
+		header_up Host {upstream_hostport}
+		header_up -Origin
+		header_up -Referer
+	}
+}
