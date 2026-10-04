@@ -1,0 +1,78 @@
+# Local names for every web UI in the stack. Pi-hole answers *.gadol.lan with
+# the host IP (FTLCONF_misc_dnsmasq_lines in docker-compose.yml), so each name
+# lands here and is forwarded to the service's published port.
+#
+# Plain HTTP: no public CA issues certificates for .lan. The http:// prefix
+# turns off Caddy's automatic HTTPS for that site.
+#
+# After editing: docker compose restart caddy
+
+# Bare IP: health check for Uptime Kuma (kuma.caddy-web label)
+http://192.168.1.200 {
+	respond "OK"
+}
+
+http://home.gadol.lan {
+	# Homepage rejects Host headers missing from HOMEPAGE_ALLOWED_HOSTS.
+	# Send the IP:port it already accepts instead of home.gadol.lan.
+	reverse_proxy 192.168.1.200:3000 {
+		header_up Host {upstream_hostport}
+	}
+}
+
+http://dozzle.gadol.lan {
+	reverse_proxy 192.168.1.200:8080
+}
+
+http://files.gadol.lan {
+	reverse_proxy 192.168.1.200:8081
+}
+
+http://pihole.gadol.lan {
+	redir / /admin/
+	reverse_proxy 192.168.1.200:8053
+}
+
+http://pinchflat.gadol.lan {
+	reverse_proxy 192.168.1.200:8945
+}
+
+http://dockhand.gadol.lan {
+	reverse_proxy 192.168.1.200:3001
+}
+
+http://pdf.gadol.lan {
+	reverse_proxy 192.168.1.200:8090
+}
+
+http://wud.gadol.lan {
+	reverse_proxy 192.168.1.200:3033
+}
+
+http://wg.gadol.lan {
+	reverse_proxy 192.168.1.200:51821
+}
+
+http://glances.gadol.lan {
+	reverse_proxy 192.168.1.200:61208
+}
+
+http://go2rtc.gadol.lan {
+	reverse_proxy 192.168.1.200:1984
+}
+
+http://cams.gadol.lan {
+	reverse_proxy 192.168.1.200:8082
+}
+
+http://cutter.gadol.lan {
+	reverse_proxy 192.168.1.200:8083
+}
+
+http://emby.gadol.lan {
+	reverse_proxy 192.168.1.200:8096
+}
+
+http://kuma.gadol.lan {
+	reverse_proxy 192.168.1.200:3002
+}

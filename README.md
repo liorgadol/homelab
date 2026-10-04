@@ -4,6 +4,15 @@ A comprehensive Docker Compose stack featuring essential services for home serve
 
 ## Services Overview
 
+Every web UI has a local name, `http://<name>.gadol.lan` — see [Local DNS names](#local-dns-names).
+The `localhost:<port>` addresses below keep working.
+
+### 🌐 Caddy
+**Port:** 80  
+Reverse proxy that maps each `*.gadol.lan` name to a service's published port.
+- Config: `./caddy/Caddyfile`; apply edits with `docker compose restart caddy`
+- `http://192.168.1.200/` answers `OK` (health check for Uptime Kuma)
+
 ### 🔍 Dozzle
 **Port:** 8080  
 Real-time Docker container log viewer with a clean web interface.
@@ -22,9 +31,9 @@ Customizable dashboard for organizing your services and links.
 - Configuration: `./homepage/config`, custom icons: `./homepage/icons`
 
 ### 🛡️ Pi-hole
-**Ports:** 53 (DNS, TCP+UDP), 80 (HTTP)  
-Network-wide ad blocker and DNS server.
-- Web interface: `http://localhost/admin`
+**Ports:** 53 (DNS, TCP+UDP), 8053 (HTTP)  
+Network-wide ad blocker and DNS server. Also resolves `*.gadol.lan` to the host.
+- Web interface: `http://localhost:8053/admin` or `http://pihole.gadol.lan`
 - Query log retention: 30 days (`MAXDBDAYS`)
 
 ### 📺 Pinchflat
@@ -220,6 +229,10 @@ The stack will create the following directories for persistent data:
 ├── README.md
 ├── autokuma/
 │   └── data/               # AutoKuma id map — do not delete (see Monitoring)
+├── caddy/
+│   ├── Caddyfile           # *.gadol.lan routes
+│   ├── config/
+│   └── data/
 ├── cutter/                 # Cutter source (Dockerfile.backend, Dockerfile.frontend, frontend/)
 ├── dockhand/
 │   └── data/
@@ -298,25 +311,42 @@ docker compose logs -f dozzle
 
 ## Service Access URLs
 
-| Service | URL | Notes |
-|---------|-----|-------|
-| Dozzle | http://localhost:8080 | Log viewer |
-| FileBrowser | http://localhost:8081 | File manager |
-| Homepage | http://localhost:3000 | Dashboard |
-| Pi-hole | http://localhost/admin | Ad blocker |
-| Pinchflat | http://localhost:8945 | YouTube downloader |
-| Dockhand | http://localhost:3001 | Docker management |
-| Stirling PDF | http://localhost:8090 | PDF tools |
-| WUD | http://localhost:3033 | Image update checker + auto-updater |
-| wg-easy | http://localhost:51821 | WireGuard VPN management |
-| go2rtc | http://localhost:1984 | Camera stream server |
-| Splitcam web | http://localhost:8082 | Camera viewer |
-| Cutter | http://localhost:8083 | Background removal / bleed |
-| Emby | http://localhost:8096 | Media server |
-| Glances | http://localhost:61208 | System monitoring |
-| Uptime Kuma | http://localhost:3002 | Uptime monitoring + Telegram alerts |
+| Service | Local name | Port URL | Notes |
+|---------|------------|----------|-------|
+| Dozzle | http://dozzle.gadol.lan | http://localhost:8080 | Log viewer |
+| FileBrowser | http://files.gadol.lan | http://localhost:8081 | File manager |
+| Homepage | http://home.gadol.lan | http://localhost:3000 | Dashboard |
+| Pi-hole | http://pihole.gadol.lan | http://localhost:8053/admin | Ad blocker |
+| Pinchflat | http://pinchflat.gadol.lan | http://localhost:8945 | YouTube downloader |
+| Dockhand | http://dockhand.gadol.lan | http://localhost:3001 | Docker management |
+| Stirling PDF | http://pdf.gadol.lan | http://localhost:8090 | PDF tools |
+| WUD | http://wud.gadol.lan | http://localhost:3033 | Image update checker + auto-updater |
+| wg-easy | http://wg.gadol.lan | http://localhost:51821 | WireGuard VPN management |
+| go2rtc | http://go2rtc.gadol.lan | http://localhost:1984 | Camera stream server |
+| Splitcam web | http://cams.gadol.lan | http://localhost:8082 | Camera viewer |
+| Cutter | http://cutter.gadol.lan | http://localhost:8083 | Background removal / bleed |
+| Emby | http://emby.gadol.lan | http://localhost:8096 | Media server |
+| Glances | http://glances.gadol.lan | http://localhost:61208 | System monitoring |
+| Uptime Kuma | http://kuma.gadol.lan | http://localhost:3002 | Uptime monitoring + Telegram alerts |
 
-Non-HTTP ports: Pi-hole DNS on 53/tcp+udp, WireGuard on 51820/udp, go2rtc RTSP on 8554 and WebRTC on 8555/tcp+udp, Emby HTTPS on 8920.
+### Local DNS names
+
+Pi-hole answers `gadol.lan` and every name under it with the host IP (`192.168.1.200`),
+via `FTLCONF_misc_dnsmasq_lines` in `docker-compose.yml`. The request reaches Caddy on
+port 80, which forwards it to the service's published port by name (`caddy/Caddyfile`).
+Nothing is set in Pi-hole's "Local DNS Records" page: it has no wildcards.
+
+- Devices must use Pi-hole as their DNS server (router DHCP setting). A device on any
+  other resolver gets "not found" for these names.
+- Over WireGuard the names only work if the peer's DNS is `192.168.1.200`. Otherwise use
+  the port URLs.
+- Plain HTTP only: public CAs do not issue certificates for `.lan`.
+- Type `http://` the first time; browsers may treat a bare unknown name as a search.
+
+To add a service: add a `http://<name>.gadol.lan { reverse_proxy 192.168.1.200:<port> }`
+block to `caddy/Caddyfile`, then `docker compose restart caddy`. No DNS change needed.
+
+Non-HTTP ports: Caddy on 80, Pi-hole DNS on 53/tcp+udp, WireGuard on 51820/udp, go2rtc RTSP on 8554 and WebRTC on 8555/tcp+udp, Emby HTTPS on 8920.
 
 ## Port Conflicts
 
@@ -443,7 +473,6 @@ Check the RTSP URL works directly (`ffprobe rtsp://user:pass@ip:554/stream1`), a
 ## Security Considerations
 
 - Change all default passwords immediately
-- Pi-hole runs on the standard HTTP port (80) - consider using a reverse proxy
 - Stirling PDF has security disabled - enable if exposing to internet
 - Consider placing services behind a VPN if accessing remotely (wg-easy is included for this)
 - Several services (Dozzle, Homepage, Dockhand, WUD, Glances, Uptime Kuma, AutoKuma) mount `/var/run/docker.sock` - anyone with access to those containers has effective root on the host

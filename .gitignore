@@ -38,3 +38,6 @@ emby/config/*
 !emby/config/plugins/
 emby/config/plugins/*
 !emby/config/plugins/configurations/
+
+# Caddy runtime state
+caddy/config/

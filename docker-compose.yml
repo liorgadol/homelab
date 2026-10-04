@@ -68,7 +68,7 @@ services:
       - "kuma.pihole.docker.name=Pi-hole"
       - "kuma.pihole.docker.docker_container=pihole"
       - "kuma.pihole-web.http.name=Pi-hole web"
-      - "kuma.pihole-web.http.url=http://192.168.1.200:80/admin/"
+      - "kuma.pihole-web.http.url=http://192.168.1.200:8053/admin/"
       - "kuma.pihole-dns.dns.name=Pi-hole DNS"
       - "kuma.pihole-dns.dns.hostname=google.com"
       - "kuma.pihole-dns.dns.dns_resolve_server=192.168.1.200"
@@ -81,15 +81,38 @@ services:
     ports:
       - "53:53/tcp"
       - "53:53/udp"
-      - "80:80/tcp"
+      - "8053:80/tcp"   # 80 belongs to Caddy
     environment:
       TZ: ${TZ}
       WEBPASSWORD: ${PIHOLE_WEBPASSWORD}
       SERVERIP: ${PIHOLE_SERVERIP}
       MAXDBDAYS: 30
+      # Wildcard: gadol.lan and every name under it resolve to the host,
+      # where Caddy routes them. Pi-hole v6 only; it also makes the
+      # setting read-only in the web UI.
+      FTLCONF_misc_dnsmasq_lines: "address=/gadol.lan/192.168.1.200"
     volumes:
       - ./pihole/etc-pihole/:/etc/pihole/
       - ./pihole/etc-dnsmasq.d/:/etc/dnsmasq.d/
+
+  # Caddy - Reverse proxy: <service>.gadol.lan to each web UI (see caddy/Caddyfile)
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    labels:
+      - "kuma.caddy.docker.name=Caddy"
+      - "kuma.caddy.docker.docker_container=caddy"
+      - "kuma.caddy-web.http.name=Caddy web"
+      - "kuma.caddy-web.http.url=http://192.168.1.200/"
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/data:/data
+      - ./caddy/config:/config
+    environment:
+      - TZ=${TZ}
 
   pinchflat:
     image: ghcr.io/kieraneglin/pinchflat:latest
