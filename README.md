@@ -8,7 +8,7 @@ Every web UI has a local name, `http://<name>.gadol.lan` — see [Local DNS name
 The `localhost:<port>` addresses below keep working.
 
 ### 🌐 Caddy
-**Port:** 80  
+**Ports:** 80 (HTTP), 443 (HTTPS, `immich.gadol.lan` only)  
 Reverse proxy that maps each `*.gadol.lan` name to a service's published port.
 - Config: `./caddy/Caddyfile`; apply edits with `docker compose restart caddy`
 - `http://192.168.1.200/` answers `OK` (health check for Uptime Kuma)
@@ -330,7 +330,8 @@ docker compose logs -f dozzle
 | Uptime Kuma | http://kuma.gadol.lan | http://localhost:3002 | Uptime monitoring + Telegram alerts |
 | Router | http://router.gadol.lan | http://192.168.1.1 | Not in this stack |
 | Access point | http://ap.gadol.lan | http://192.168.1.150 | Not in this stack |
-| qBittorrent | http://torrent.gadol.lan | http://192.168.1.2:8090 | On the NAS, not in this stack |
+| qBittorrent | http://torrent.gadol.lan | http://192.168.1.2:8090 | On the Windows Server, not in this stack |
+| Immich | https://immich.gadol.lan | https://192.168.1.200:2284 | Not in this stack; HTTPS, see below |
 
 ### Local DNS names
 
@@ -343,13 +344,31 @@ Nothing is set in Pi-hole's "Local DNS Records" page: it has no wildcards.
   other resolver gets "not found" for these names.
 - Over WireGuard the names only work if the peer's DNS is `192.168.1.200`. Otherwise use
   the port URLs.
-- Plain HTTP only: public CAs do not issue certificates for `.lan`.
+- Plain HTTP, except `immich.gadol.lan`: public CAs do not issue certificates for `.lan`.
 - Type `http://` the first time; browsers may treat a bare unknown name as a search.
+
+#### HTTPS for immich.gadol.lan
+
+Caddy signs `immich.gadol.lan` with its own local CA (`tls internal`). Browsers warn until
+the device trusts that CA's root certificate, created on Caddy's first start at
+`caddy/data/caddy/pki/authorities/local/root.crt` (valid 10 years). Install it once per device:
+
+- macOS: double-click it, then in Keychain Access set it to **Always Trust**
+- iPhone/iPad: AirDrop or mail it, install the profile, then enable it under
+  Settings → General → About → Certificate Trust Settings
+- Android: Settings → Security → Encryption & credentials → Install a certificate → CA certificate
+- Windows: open it → Install Certificate → Local Machine → Trusted Root Certification Authorities
+
+Keep `caddy/data/` private: it holds the CA's private key, which can sign a certificate for
+any name your devices will then trust. It is in `.gitignore` (`*/data/`).
+
+Immich's mobile app may not trust a user-installed CA (Android apps ignore them by
+default); keep the app on `https://liorgadol.ddnsfree.com:2284`.
 
 To add a service: add a `http://<name>.gadol.lan { reverse_proxy 192.168.1.200:<port> }`
 block to `caddy/Caddyfile`, then `docker compose restart caddy`. No DNS change needed.
 
-Non-HTTP ports: Caddy on 80, Pi-hole DNS on 53/tcp+udp, WireGuard on 51820/udp, go2rtc RTSP on 8554 and WebRTC on 8555/tcp+udp, Emby HTTPS on 8920.
+Non-HTTP ports: Caddy on 80 and 443, Pi-hole DNS on 53/tcp+udp, WireGuard on 51820/udp, go2rtc RTSP on 8554 and WebRTC on 8555/tcp+udp, Emby HTTPS on 8920.
 
 ## Port Conflicts
 

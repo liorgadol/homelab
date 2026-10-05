@@ -91,12 +91,28 @@ http://ap.gadol.lan {
 	}
 }
 
-# qBittorrent on the NAS. Its CSRF check rejects requests whose Origin or
+# qBittorrent on the Windows Server. Its CSRF check rejects requests whose Origin or
 # Referer differs from the Host it sees, so send its own address and drop both.
 http://torrent.gadol.lan {
 	reverse_proxy 192.168.1.2:8090 {
 		header_up Host {upstream_hostport}
 		header_up -Origin
 		header_up -Referer
+	}
+}
+
+# Immich, behind its own nginx on 2284 (TLS with a ZeroSSL cert for
+# liorgadol.ddnsfree.com). The only HTTPS name here: tls internal signs it
+# with Caddy's local CA, whose root certificate each device must trust
+# (caddy/data/caddy/pki/authorities/local/root.crt). Upstream TLS is verified
+# against the ddnsfree name, since the cert does not cover the IP.
+https://immich.gadol.lan {
+	tls internal
+	redir / /photos
+	reverse_proxy https://192.168.1.200:2284 {
+		header_up Host liorgadol.ddnsfree.com
+		transport http {
+			tls_server_name liorgadol.ddnsfree.com
+		}
 	}
 }
