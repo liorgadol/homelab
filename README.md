@@ -331,7 +331,7 @@ docker compose logs -f dozzle
 | Router | http://router.gadol.lan | http://192.168.1.1 | Not in this stack |
 | Access point | http://ap.gadol.lan | http://192.168.1.150 | Not in this stack |
 | qBittorrent | http://torrent.gadol.lan | http://192.168.1.2:8090 | On the Windows Server, not in this stack |
-| Immich | https://immich.gadol.lan | https://192.168.1.200:2284 | Not in this stack; HTTPS, see below |
+| Immich | https://immich.gadol.lan | https://192.168.1.200:2284 | Not in this stack; redirects to ddnsfree, see below |
 
 ### Local DNS names
 
@@ -349,6 +349,11 @@ Nothing is set in Pi-hole's "Local DNS Records" page: it has no wildcards.
 
 #### HTTPS for immich.gadol.lan
 
+`immich.gadol.lan` redirects to `https://liorgadol.ddnsfree.com:2284` instead of proxying.
+Immich's nginx rate-limits by source IP and exempts only `192.168.0.0/16`; proxied requests
+came from Caddy's Docker address, so the page's burst of asset requests got HTTP 429.
+
+The name stays HTTPS because Immich's HSTS header reached browsers through the old proxy.
 Caddy signs `immich.gadol.lan` with its own local CA (`tls internal`). Browsers warn until
 the device trusts that CA's root certificate, created on Caddy's first start at
 `caddy/data/caddy/pki/authorities/local/root.crt` (valid 10 years). Install it once per device:

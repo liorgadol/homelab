@@ -102,17 +102,14 @@ http://torrent.gadol.lan {
 }
 
 # Immich, behind its own nginx on 2284 (TLS with a ZeroSSL cert for
-# liorgadol.ddnsfree.com). The only HTTPS name here: tls internal signs it
+# liorgadol.ddnsfree.com). Redirect, not proxy: nginx rate-limits by source
+# IP and exempts only 192.168.0.0/16, while proxied requests arrive from
+# Caddy's Docker address, so a page load of ~100 assets got HTTP 429.
+# Still HTTPS: Immich's HSTS header reached browsers through the old proxy,
+# so they refuse http://immich.gadol.lan for a year. tls internal signs it
 # with Caddy's local CA, whose root certificate each device must trust
-# (caddy/data/caddy/pki/authorities/local/root.crt). Upstream TLS is verified
-# against the ddnsfree name, since the cert does not cover the IP.
+# (caddy/data/caddy/pki/authorities/local/root.crt).
 https://immich.gadol.lan {
 	tls internal
-	redir / /photos
-	reverse_proxy https://192.168.1.200:2284 {
-		header_up Host liorgadol.ddnsfree.com
-		transport http {
-			tls_server_name liorgadol.ddnsfree.com
-		}
-	}
+	redir https://liorgadol.ddnsfree.com:2284{uri}
 }
