@@ -268,7 +268,7 @@ The stack will create the following directories for persistent data:
     └── data/
 ```
 
-Emby media libraries are not directories here — they are named Docker volumes mounted from the NAS over CIFS.
+Emby media libraries are not directories here — they are named Docker volumes mounted over CIFS from the Windows Server (192.168.1.2).
 
 ## Management Commands
 
@@ -472,12 +472,12 @@ docker compose ps -a --filter status=created
 ```
 
 ### Emby media volumes won't mount
-CIFS volumes are mounted by the Docker daemon at container start, so a bad credential or an unreachable NAS shows up as a failure to start Emby.
+CIFS volumes are mounted by the Docker daemon at container start, so a bad credential or an unreachable Windows Server shows up as a failure to start Emby.
 ```bash
 docker compose logs emby
 docker volume inspect homelab_movies
 ```
-Check that `cifs-utils` is installed, `SMB_USER`/`SMB_PASS` are correct, and the share names in `docker-compose.yml` match the NAS. Removing a volume requires `docker compose down` first, then `docker volume rm`.
+Check that `cifs-utils` is installed, `SMB_USER`/`SMB_PASS` are correct, and the share names in `docker-compose.yml` match the Windows Server shares. Removing a volume requires `docker compose down` first, then `docker volume rm`.
 
 ### Emby hardware transcoding fails
 Verify `/dev/dri` exists on the host and that the `GIDLIST` values match the host's `video` and `render` groups:
@@ -500,7 +500,7 @@ Check the RTSP URL works directly (`ffprobe rtsp://user:pass@ip:554/stream1`), a
 - Several services (Dozzle, Homepage, Dockhand, WUD, Glances, Uptime Kuma, AutoKuma) mount `/var/run/docker.sock` - anyone with access to those containers has effective root on the host
 - go2rtc's API is configured with `origin: "*"` and no authentication - do not expose port 1984 to the internet
 - The Telegram bot token is interpolated into an AutoKuma label, so it shows in `docker inspect autokuma` (it is already visible in `docker inspect wud` as an environment variable)
-- Camera and NAS credentials live in `.env` and are interpolated into stream URLs and mount options - keep `.env` out of version control (it is already in `.gitignore`)
+- Camera and Windows Server share credentials live in `.env` and are interpolated into stream URLs and mount options - keep `.env` out of version control (it is already in `.gitignore`)
 
 ## Monitoring
 
