@@ -74,6 +74,10 @@ services:
     restart: unless-stopped
     ports:
       - "7575:7575"
+    # Resolve through Pi-hole: status pings run from this container, and only
+    # Pi-hole knows *.gadol.lan (Docker hands containers the host's upstream DNS).
+    dns:
+      - 192.168.1.200
     environment:
       # Encrypts integration credentials in the database. Changing it makes
       # the stored ones unreadable. Generate with: openssl rand -hex 32
