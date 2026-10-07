@@ -30,6 +30,13 @@ Customizable dashboard for organizing your services and links.
 - Access at: `http://localhost:3000`
 - Configuration: `./homepage/config`, custom icons: `./homepage/icons`
 
+### 🧩 Homarr
+**Port:** 7575  
+Dashboard configured in the browser (drag-and-drop layout, apps and integrations added through forms). On trial as a Homepage replacement.
+- Access at: `http://localhost:7575`; the first visit runs the onboarding wizard that creates the admin account
+- Data: `./homarr/appdata` (database, uploaded icons). Back this up; the config is not in git
+- Requires `HOMARR_SECRET_ENCRYPTION_KEY` in `.env`
+
 ### 🛡️ Pi-hole
 **Ports:** 53 (DNS, TCP+UDP), 8053 (HTTP)  
 Network-wide ad blocker and DNS server. Also resolves `*.gadol.lan` to the host.
@@ -137,6 +144,9 @@ HOMEPAGE_ALLOWED_HOSTS=
 FILEBROWSER_USERNAME=admin
 FILEBROWSER_PASSWORD=changeme
 
+# Homarr: 64 hex chars, generate with `openssl rand -hex 32`
+HOMARR_SECRET_ENCRYPTION_KEY=
+
 # Timezone for every container
 TZ=Asia/Jerusalem
 
@@ -181,6 +191,7 @@ UPTIME_KUMA_PASSWORD=your_secure_password
 
 ### Required Variables:
 - `TZ`: Timezone for every container (e.g., Asia/Jerusalem, Europe/London). If unset, containers fall back to UTC
+- `HOMARR_SECRET_ENCRYPTION_KEY`: Key Homarr encrypts integration credentials with (`openssl rand -hex 32`). Keep it stable: a new key makes the saved credentials unreadable
 - `PIHOLE_WEBPASSWORD`: Password for Pi-hole admin interface
 - `PIHOLE_SERVERIP`: Your server's IP address
 - `WIREGUARD_PASS_HASH`: bcrypt hash for wg-easy web UI password
@@ -245,6 +256,8 @@ The stack will create the following directories for persistent data:
 ├── homepage/
 │   ├── config/
 │   └── icons/
+├── homarr/
+│   └── appdata/
 ├── pihole/
 │   ├── etc-pihole/
 │   └── etc-dnsmasq.d/
@@ -316,6 +329,7 @@ docker compose logs -f dozzle
 | Dozzle | http://dozzle.gadol.lan | http://localhost:8080 | Log viewer |
 | FileBrowser | http://files.gadol.lan | http://localhost:8081 | File manager |
 | Homepage | http://home.gadol.lan | http://localhost:3000 | Dashboard |
+| Homarr | — | http://localhost:7575 | Dashboard (trial), no local name yet |
 | Pi-hole | http://pihole.gadol.lan | http://localhost:8053/admin | Ad blocker |
 | Pinchflat | http://pinchflat.gadol.lan | http://localhost:8945 | YouTube downloader |
 | Dockhand | http://dockhand.gadol.lan | http://localhost:3001 | Docker management |
