@@ -118,6 +118,13 @@ System monitoring dashboard (CPU, memory, disk, containers).
 - Access at: `http://localhost:61208`
 - Runs with `pid: host` and a read-only Docker socket
 
+### 📉 Beszel
+**Ports:** 8091 (hub web UI), 45876 (agent, host network)  
+Lightweight server monitoring with history and alerts. Hub (`beszel`) plus an agent (`beszel-agent`) for this host.
+- Access at: `http://localhost:8091` or `http://beszel.gadol.lan` (container listens on 8090; 8090 on the host is Stirling PDF)
+- Data: `./beszel/data` (hub), `./beszel-agent/data` (agent)
+- First run: create the admin account, then "Add System" with host `192.168.1.200`, port `45876`. Copy the public key shown there into `BESZEL_AGENT_KEY` in `.env` and run `docker compose up -d beszel-agent`
+
 ### 📈 Uptime Kuma + AutoKuma
 **Port:** 3002  
 Uptime monitoring for every container in this stack, with alerts on Telegram.
@@ -184,6 +191,9 @@ CAMERA2_IP=192.168.1.y
 SMB_USER=nas_username
 SMB_PASS=nas_password
 
+# Beszel: hub public key from its "Add System" dialog
+BESZEL_AGENT_KEY=ssh-ed25519 AAAA...
+
 # Uptime Kuma admin account, used by AutoKuma to log in
 UPTIME_KUMA_USERNAME=admin
 UPTIME_KUMA_PASSWORD=your_secure_password
@@ -198,6 +208,7 @@ UPTIME_KUMA_PASSWORD=your_secure_password
 - `WUD_AUTH_ADMIN_PASSWORD`: Password for the WUD web UI
 - `CAMERA_USER`, `CAMERA_PASSWORD`, `CAMERA1_IP`, `CAMERA2_IP`: RTSP credentials and addresses for go2rtc
 - `SMB_USER`, `SMB_PASS`: Credentials for the CIFS shares backing the Emby libraries
+- `BESZEL_AGENT_KEY`: The Beszel hub's public key. The agent refuses hub connections until it is set
 - `UPTIME_KUMA_USERNAME`, `UPTIME_KUMA_PASSWORD`: The Uptime Kuma admin account. AutoKuma logs in with it; create the account in the UI with exactly these values
 
 ### Optional Variables:
@@ -240,6 +251,10 @@ The stack will create the following directories for persistent data:
 ├── README.md
 ├── autokuma/
 │   └── data/               # AutoKuma id map — do not delete (see Monitoring)
+├── beszel/
+│   └── data/
+├── beszel-agent/
+│   └── data/
 ├── caddy/
 │   ├── Caddyfile           # *.gadol.lan routes
 │   ├── config/
@@ -341,6 +356,7 @@ docker compose logs -f dozzle
 | Cutter | http://cutter.gadol.lan | http://localhost:8083 | Background removal / bleed |
 | Emby | http://emby.gadol.lan | http://localhost:8096 | Media server |
 | Glances | http://glances.gadol.lan | http://localhost:61208 | System monitoring |
+| Beszel | http://beszel.gadol.lan | http://localhost:8091 | Server monitoring |
 | Uptime Kuma | http://kuma.gadol.lan | http://localhost:3002 | Uptime monitoring + Telegram alerts |
 | Router | http://router.gadol.lan | http://192.168.1.1 | Not in this stack |
 | Access point | http://ap.gadol.lan | http://192.168.1.150 | Not in this stack |

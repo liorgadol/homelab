@@ -57,6 +57,10 @@ http://glances.gadol.lan {
 	reverse_proxy 192.168.1.200:61208
 }
 
+http://beszel.gadol.lan {
+	reverse_proxy 192.168.1.200:8091
+}
+
 http://go2rtc.gadol.lan {
 	reverse_proxy 192.168.1.200:1984
 }
