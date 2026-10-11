@@ -39,29 +39,7 @@ services:
       - ./filebrowser/config:/config
       - ./filebrowser/database:/database
 
-  # Homepage - Dashboard
-  homepage:
-    image: ghcr.io/gethomepage/homepage:latest
-    container_name: homepage
-    labels:
-      - "kuma.homepage.docker.name=Homepage"
-      - "kuma.homepage.docker.docker_container=homepage"
-      - "kuma.homepage-web.http.name=Homepage web"
-      - "kuma.homepage-web.http.url=http://192.168.1.200:3000/"
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    environment:
-      - HOMEPAGE_ALLOWED_HOSTS=${HOMEPAGE_ALLOWED_HOSTS}
-      - HOMEPAGE_VAR_FILEBROWSER_USERNAME=${FILEBROWSER_USERNAME}
-      - HOMEPAGE_VAR_FILEBROWSER_PASSWORD=${FILEBROWSER_PASSWORD}
-      - TZ=${TZ}
-    volumes:
-      - ./homepage/config:/app/config
-      - ./homepage/icons:/app/public/icons
-      - /var/run/docker.sock:/var/run/docker.sock
-
-  # Homarr - Dashboard edited in the browser, on trial next to Homepage.
+  # Homarr - Dashboard edited in the browser.
   # Boards, apps and integrations live in its database under ./homarr/appdata.
   homarr:
     image: ghcr.io/homarr-labs/homarr:latest

@@ -10,7 +10,6 @@
 dockhand/data/
 pihole/etc-pihole/
 pihole/etc-dnsmasq.d/
-homepage/config/
 stirlingtools/configs/
 stirlingtools/customFiles/
 filebrowser/database/

@@ -24,15 +24,9 @@ Web-based file manager for browsing and managing files.
 - Access at: `http://localhost:8081` (container listens on 8070)
 - Files served from: `./filebrowser/data`
 
-### 🏠 Homepage
-**Port:** 3000  
-Customizable dashboard for organizing your services and links.
-- Access at: `http://localhost:3000`
-- Configuration: `./homepage/config`, custom icons: `./homepage/icons`
-
 ### 🧩 Homarr
 **Port:** 7575  
-Dashboard configured in the browser (drag-and-drop layout, apps and integrations added through forms). On trial as a Homepage replacement.
+Dashboard configured in the browser (drag-and-drop layout, apps and integrations added through forms).
 - Access at: `http://localhost:7575`; the first visit runs the onboarding wizard that creates the admin account
 - Data: `./homarr/appdata` (database, uploaded icons). Back this up; the config is not in git
 - Requires `HOMARR_SECRET_ENCRYPTION_KEY` in `.env`
@@ -146,8 +140,7 @@ Uptime monitoring for every container in this stack, with alerts on Telegram.
 Create a `.env` file in the same directory as your `docker-compose.yml`:
 
 ```env
-# Homepage Configuration
-HOMEPAGE_ALLOWED_HOSTS=
+# FileBrowser Configuration
 FILEBROWSER_USERNAME=admin
 FILEBROWSER_PASSWORD=changeme
 
@@ -212,7 +205,6 @@ UPTIME_KUMA_PASSWORD=your_secure_password
 - `UPTIME_KUMA_USERNAME`, `UPTIME_KUMA_PASSWORD`: The Uptime Kuma admin account. AutoKuma logs in with it; create the account in the UI with exactly these values
 
 ### Optional Variables:
-- `HOMEPAGE_ALLOWED_HOSTS`: Allowed hostnames for Homepage (leave empty for all)
 - `FILEBROWSER_USERNAME`: FileBrowser username (default: admin)
 - `FILEBROWSER_PASSWORD`: FileBrowser password
 - `GHCR_USERNAME`, `GHCR_TOKEN`: GitHub username and a PAT with `read:packages` scope, used by WUD to avoid ghcr rate limiting
@@ -268,9 +260,6 @@ The stack will create the following directories for persistent data:
 │   ├── config/
 │   ├── data/
 │   └── database/
-├── homepage/
-│   ├── config/
-│   └── icons/
 ├── homarr/
 │   └── appdata/
 ├── pihole/
@@ -343,8 +332,7 @@ docker compose logs -f dozzle
 |---------|------------|----------|-------|
 | Dozzle | http://dozzle.gadol.lan | http://localhost:8080 | Log viewer |
 | FileBrowser | http://files.gadol.lan | http://localhost:8081 | File manager |
-| Homepage | http://home.gadol.lan | http://localhost:3000 | Dashboard |
-| Homarr | — | http://localhost:7575 | Dashboard (trial), no local name yet |
+| Homarr | http://home.gadol.lan | http://localhost:7575 | Dashboard |
 | Pi-hole | http://pihole.gadol.lan | http://localhost:8053/admin | Ad blocker |
 | Pinchflat | http://pinchflat.gadol.lan | http://localhost:8945 | YouTube downloader |
 | Dockhand | http://dockhand.gadol.lan | http://localhost:3001 | Docker management |
@@ -424,7 +412,7 @@ ports:
 
 Important directories to backup:
 - `./filebrowser/` - FileBrowser data and configuration
-- `./homepage/config/` - Homepage dashboard configuration
+- `./homarr/appdata/` - Homarr boards, apps and integrations
 - `./pihole/` - Pi-hole configuration and blocklists
 - `./pinchflat/config/` - Pinchflat subscriptions
 - `./stirlingtools/configs/` - Stirling PDF settings
@@ -532,7 +520,7 @@ Check the RTSP URL works directly (`ffprobe rtsp://user:pass@ip:554/stream1`), a
 - Change all default passwords immediately
 - Stirling PDF has security disabled - enable if exposing to internet
 - Consider placing services behind a VPN if accessing remotely (wg-easy is included for this)
-- Several services (Dozzle, Homepage, Dockhand, WUD, Glances, Uptime Kuma, AutoKuma) mount `/var/run/docker.sock` - anyone with access to those containers has effective root on the host
+- Several services (Dozzle, Homarr, Dockhand, WUD, Glances, Uptime Kuma, AutoKuma) mount `/var/run/docker.sock` - anyone with access to those containers has effective root on the host
 - go2rtc's API is configured with `origin: "*"` and no authentication - do not expose port 1984 to the internet
 - The Telegram bot token is interpolated into an AutoKuma label, so it shows in `docker inspect autokuma` (it is already visible in `docker inspect wud` as an environment variable)
 - Camera and Windows Server share credentials live in `.env` and are interpolated into stream URLs and mount options - keep `.env` out of version control (it is already in `.gitignore`)
@@ -757,7 +745,7 @@ match the docs, read the source at the matching tag:
 This stack uses various open-source projects. Please refer to each project's license:
 - [Dozzle](https://github.com/amir20/dozzle)
 - [FileBrowser](https://github.com/filebrowser/filebrowser)
-- [Homepage](https://github.com/gethomepage/homepage)
+- [Homarr](https://github.com/homarr-labs/homarr)
 - [Pi-hole](https://github.com/pi-hole/pi-hole)
 - [Pinchflat](https://github.com/kieraneglin/pinchflat)
 - [Dockhand](https://github.com/fnsys/dockhand)

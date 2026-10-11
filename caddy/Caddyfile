@@ -13,8 +13,7 @@ http://192.168.1.200 {
 }
 
 http://home.gadol.lan {
-	# Homepage rejects Host headers missing from HOMEPAGE_ALLOWED_HOSTS.
-	# Send the IP:port it already accepts instead of home.gadol.lan.
+	# Homarr dashboard. Upstream sees IP:port as Host, same as direct access.
 	reverse_proxy 192.168.1.200:7575 {
 		header_up Host {upstream_hostport}
 	}
