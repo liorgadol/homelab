@@ -12,18 +12,17 @@ The `localhost:<port>` addresses below keep working.
 Reverse proxy that maps each `*.gadol.lan` name to a service's published port.
 - Config: `./caddy/Caddyfile`; apply edits with `docker compose restart caddy`
 - `http://192.168.1.200/` answers `OK` (health check for Uptime Kuma)
-- Admin API listens on `0.0.0.0:2019` inside the container for Caddy Manager, but is not published on the host: it has no authentication
+- Admin API listens on `0.0.0.0:2019` inside the container for caddy/ui and Homarr, but is not published on the host: it has no authentication
 
-### 🧭 Caddy Manager
+### 🧭 caddy/ui
 **Port:** 8084  
-Web UI for the Caddy container above, through Caddy's admin API (`http://caddy:2019` on the compose network).
+Web UI for the Caddy container above: Caddyfile editor with validation and version history, route manager, TLS and upstream status.
 - Access at: `http://localhost:8084` or `http://caddy.gadol.lan`
-- First login: `admin` / `caddyrocks`. Change it immediately
-- Add the server in its UI with API URL `http://caddy:2019`
-- Data: `./caddymanager/data` (SQLite)
-- Requires `CADDYMANAGER_JWT_SECRET` in `.env`
-- Changes pushed from Caddy Manager live in Caddy's memory only. `docker compose restart caddy` reloads `caddy/Caddyfile`, which stays the source of truth; copy anything worth keeping back into it
-- A pushed config without `admin 0.0.0.0:2019` moves the admin API back to localhost and locks Caddy Manager out until Caddy restarts
+- Login: user `gadol`, password from `CADDY_UI_PASSWORD`
+- Saves edit `caddy/Caddyfile` in place (`docker exec` + `tee` into the `caddy` container), then reload Caddy through its admin API. The Caddyfile stays the source of truth; commit UI edits to git like hand edits
+- Data: `./caddy-ui/data` (instance list, Caddyfile history, settings)
+- Requires `CADDY_UI_PASSWORD` and `CADDY_UI_JWT_SECRET` in `.env`
+- Mounts the Docker socket (root-equivalent on the host) to reach the Caddyfile
 
 ### 🔍 Dozzle
 **Port:** 8080  
@@ -196,8 +195,9 @@ CAMERA2_IP=192.168.1.y
 SMB_USER=nas_username
 SMB_PASS=nas_password
 
-# Caddy Manager: signs login sessions (openssl rand -hex 32)
-CADDYMANAGER_JWT_SECRET=your_random_hex
+# caddy/ui login, and the key its sessions are signed with (openssl rand -base64 32)
+CADDY_UI_PASSWORD=your_secure_password
+CADDY_UI_JWT_SECRET=your_random_secret
 
 # Beszel: hub public key from its "Add System" dialog
 BESZEL_AGENT_KEY=ssh-ed25519 AAAA...
@@ -216,7 +216,8 @@ UPTIME_KUMA_PASSWORD=your_secure_password
 - `WUD_AUTH_ADMIN_PASSWORD`: Password for the WUD web UI
 - `CAMERA_USER`, `CAMERA_PASSWORD`, `CAMERA1_IP`, `CAMERA2_IP`: RTSP credentials and addresses for go2rtc
 - `SMB_USER`, `SMB_PASS`: Credentials for the CIFS shares backing the Emby libraries
-- `CADDYMANAGER_JWT_SECRET`: Key Caddy Manager signs login sessions with (`openssl rand -hex 32`). Changing it logs everyone out
+- `CADDY_UI_PASSWORD`: Password for the caddy/ui web UI (user `gadol`)
+- `CADDY_UI_JWT_SECRET`: Key caddy/ui signs login sessions with (`openssl rand -base64 32`). Changing it logs everyone out
 - `BESZEL_AGENT_KEY`: The Beszel hub's public key. The agent refuses hub connections until it is set
 - `UPTIME_KUMA_USERNAME`, `UPTIME_KUMA_PASSWORD`: The Uptime Kuma admin account. AutoKuma logs in with it; create the account in the UI with exactly these values
 
@@ -267,8 +268,8 @@ The stack will create the following directories for persistent data:
 │   ├── Caddyfile           # *.gadol.lan routes
 │   ├── config/
 │   └── data/
-├── caddymanager/
-│   └── data/               # SQLite database
+├── caddy-ui/
+│   └── data/               # caddy/ui instances, Caddyfile history
 ├── cutter/                 # Cutter source (Dockerfile.backend, Dockerfile.frontend, frontend/)
 ├── dockhand/
 │   └── data/
@@ -348,7 +349,7 @@ docker compose logs -f dozzle
 
 | Service | Local name | Port URL | Notes |
 |---------|------------|----------|-------|
-| Caddy Manager | http://caddy.gadol.lan | http://localhost:8084 | Caddy web UI |
+| caddy/ui | http://caddy.gadol.lan | http://localhost:8084 | Caddy web UI |
 | Dozzle | http://dozzle.gadol.lan | http://localhost:8080 | Log viewer |
 | FileBrowser | http://files.gadol.lan | http://localhost:8081 | File manager |
 | Homarr | http://home.gadol.lan | http://localhost:7575 | Dashboard |
@@ -436,7 +437,7 @@ Important directories to backup:
 - `./pinchflat/config/` - Pinchflat subscriptions
 - `./stirlingtools/configs/` - Stirling PDF settings
 - `./dockhand/data/` - Dockhand configuration
-- `./caddymanager/data/` - Caddy Manager users, servers and saved configs
+- `./caddy-ui/data/` - caddy/ui settings and Caddyfile history
 - `./wgeasy/config/` - WireGuard peer configs and keys
 - `./wud/data/` - WUD state
 - `./splitcam/config/` - go2rtc stream definitions
@@ -540,7 +541,7 @@ Check the RTSP URL works directly (`ffprobe rtsp://user:pass@ip:554/stream1`), a
 - Change all default passwords immediately
 - Stirling PDF has security disabled - enable if exposing to internet
 - Consider placing services behind a VPN if accessing remotely (wg-easy is included for this)
-- Several services (Dozzle, Homarr, Dockhand, WUD, Glances, Uptime Kuma, AutoKuma) mount `/var/run/docker.sock` - anyone with access to those containers has effective root on the host
+- Several services (Dozzle, Homarr, Dockhand, caddy/ui, WUD, Glances, Uptime Kuma, AutoKuma) mount `/var/run/docker.sock` - anyone with access to those containers has effective root on the host
 - go2rtc's API is configured with `origin: "*"` and no authentication - do not expose port 1984 to the internet
 - The Telegram bot token is interpolated into an AutoKuma label, so it shows in `docker inspect autokuma` (it is already visible in `docker inspect wud` as an environment variable)
 - Camera and Windows Server share credentials live in `.env` and are interpolated into stream URLs and mount options - keep `.env` out of version control (it is already in `.gitignore`)

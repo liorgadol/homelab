@@ -114,61 +114,60 @@ services:
       - "80:80"
       - "443:443"   # immich.gadol.lan, the only HTTPS name
     # Admin API (2019) is not published: it has no auth, and anyone reaching
-    # it can rewrite every route. Caddy Manager reaches it at caddy:2019 over
-    # the compose network.
+    # it can rewrite every route. caddy/ui and Homarr reach it at caddy:2019
+    # over the compose network.
     volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Writable: caddy/ui saves edits into it
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
       - ./caddy/data:/data
       - ./caddy/config:/config
     environment:
       - TZ=${TZ}
 
-  # Caddy Manager - Web UI for the Caddy above, through its admin API.
-  # Edits pushed from here live in Caddy's memory only: `docker compose
-  # restart caddy` reloads caddy/Caddyfile, which stays the source of truth.
-  caddymanager-backend:
-    image: caddymanager/caddymanager-backend:latest
-    container_name: caddymanager-backend
+  # caddy/ui - Web UI for the Caddy above. Edits caddy/Caddyfile in place
+  # (docker exec + tee into the caddy container), then reloads Caddy through
+  # its admin API at caddy:2019. The Caddyfile stays the source of truth.
+  # The backend name is fixed: the frontend's nginx proxies to caddy-ui-backend:3001.
+  caddy-ui-backend:
+    image: zackwag/caddy-ui-backend:latest
+    container_name: caddy-ui-backend
     labels:
-      - "kuma.caddymanager-backend.docker.name=Caddy Manager backend"
-      - "kuma.caddymanager-backend.docker.docker_container=caddymanager-backend"
-    restart: unless-stopped
-    environment:
-      - PORT=3000
-      - DB_ENGINE=sqlite
-      - SQLITE_DB_PATH=/app/data/caddymanager.sqlite
-      - CORS_ORIGIN=http://caddy.gadol.lan
-      - LOG_LEVEL=info
-      - CADDY_SANDBOX_URL=http://caddy:2019
-      - PING_INTERVAL=30000
-      - PING_TIMEOUT=2000
-      - AUDIT_LOG_MAX_SIZE_MB=100
-      - AUDIT_LOG_RETENTION_DAYS=90
-      # Signs login sessions. Generate with: openssl rand -hex 32
-      - JWT_SECRET=${CADDYMANAGER_JWT_SECRET}
-      - JWT_EXPIRATION=24h
-      - TZ=${TZ}
-    volumes:
-      - ./caddymanager/data:/app/data
-
-  # Caddy Manager web - UI on nginx, proxies /api/* to the backend
-  caddymanager-frontend:
-    image: caddymanager/caddymanager-frontend:latest
-    container_name: caddymanager-frontend
-    labels:
-      - "kuma.caddymanager-frontend.docker.name=Caddy Manager"
-      - "kuma.caddymanager-frontend.docker.docker_container=caddymanager-frontend"
-      - "kuma.caddymanager-frontend-web.http.name=Caddy Manager web"
-      - "kuma.caddymanager-frontend-web.http.url=http://192.168.1.200:8084/"
+      - "kuma.caddy-ui-backend.docker.name=caddy/ui backend"
+      - "kuma.caddy-ui-backend.docker.docker_container=caddy-ui-backend"
     restart: unless-stopped
     depends_on:
-      - caddymanager-backend
+      - caddy
+    environment:
+      # Creates the instance for the caddy container on first start
+      - CADDY_ADMIN_URL=http://caddy:2019
+      # Keep route titles out of the Caddyfile: its existing comments would
+      # otherwise be read as titles.
+      - CADDYFILE_TITLES=false
+      - CADDY_UI_USER=gadol
+      - CADDY_UI_PASSWORD=${CADDY_UI_PASSWORD}
+      # Signs login sessions. Generate with: openssl rand -base64 32
+      - JWT_SECRET=${CADDY_UI_JWT_SECRET}
+      - TZ=${TZ}
+    volumes:
+      # Root-equivalent: needed to edit the Caddyfile inside the caddy container
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./caddy-ui/data:/etc/caddy-ui
+
+  # caddy/ui web - React UI on nginx, proxies /api/* to the backend
+  caddy-ui-frontend:
+    image: zackwag/caddy-ui-frontend:latest
+    container_name: caddy-ui-frontend
+    labels:
+      - "kuma.caddy-ui-frontend.docker.name=caddy/ui"
+      - "kuma.caddy-ui-frontend.docker.docker_container=caddy-ui-frontend"
+      - "kuma.caddy-ui-frontend-web.http.name=caddy/ui web"
+      - "kuma.caddy-ui-frontend-web.http.url=http://192.168.1.200:8084/"
+    restart: unless-stopped
+    depends_on:
+      - caddy-ui-backend
     ports:
       - "8084:80"
     environment:
-      - BACKEND_HOST=caddymanager-backend:3000
-      - APP_NAME=Caddy Manager
-      - DARK_MODE=true
       - TZ=${TZ}
 
   pinchflat:
