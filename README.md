@@ -12,6 +12,18 @@ The `localhost:<port>` addresses below keep working.
 Reverse proxy that maps each `*.gadol.lan` name to a service's published port.
 - Config: `./caddy/Caddyfile`; apply edits with `docker compose restart caddy`
 - `http://192.168.1.200/` answers `OK` (health check for Uptime Kuma)
+- Admin API listens on `0.0.0.0:2019` inside the container for Caddy Manager, but is not published on the host: it has no authentication
+
+### 🧭 Caddy Manager
+**Port:** 8084  
+Web UI for the Caddy container above, through Caddy's admin API (`http://caddy:2019` on the compose network).
+- Access at: `http://localhost:8084` or `http://caddy.gadol.lan`
+- First login: `admin` / `caddyrocks`. Change it immediately
+- Add the server in its UI with API URL `http://caddy:2019`
+- Data: `./caddymanager/data` (SQLite)
+- Requires `CADDYMANAGER_JWT_SECRET` in `.env`
+- Changes pushed from Caddy Manager live in Caddy's memory only. `docker compose restart caddy` reloads `caddy/Caddyfile`, which stays the source of truth; copy anything worth keeping back into it
+- A pushed config without `admin 0.0.0.0:2019` moves the admin API back to localhost and locks Caddy Manager out until Caddy restarts
 
 ### 🔍 Dozzle
 **Port:** 8080  
@@ -184,6 +196,9 @@ CAMERA2_IP=192.168.1.y
 SMB_USER=nas_username
 SMB_PASS=nas_password
 
+# Caddy Manager: signs login sessions (openssl rand -hex 32)
+CADDYMANAGER_JWT_SECRET=your_random_hex
+
 # Beszel: hub public key from its "Add System" dialog
 BESZEL_AGENT_KEY=ssh-ed25519 AAAA...
 
@@ -201,6 +216,7 @@ UPTIME_KUMA_PASSWORD=your_secure_password
 - `WUD_AUTH_ADMIN_PASSWORD`: Password for the WUD web UI
 - `CAMERA_USER`, `CAMERA_PASSWORD`, `CAMERA1_IP`, `CAMERA2_IP`: RTSP credentials and addresses for go2rtc
 - `SMB_USER`, `SMB_PASS`: Credentials for the CIFS shares backing the Emby libraries
+- `CADDYMANAGER_JWT_SECRET`: Key Caddy Manager signs login sessions with (`openssl rand -hex 32`). Changing it logs everyone out
 - `BESZEL_AGENT_KEY`: The Beszel hub's public key. The agent refuses hub connections until it is set
 - `UPTIME_KUMA_USERNAME`, `UPTIME_KUMA_PASSWORD`: The Uptime Kuma admin account. AutoKuma logs in with it; create the account in the UI with exactly these values
 
@@ -251,6 +267,8 @@ The stack will create the following directories for persistent data:
 │   ├── Caddyfile           # *.gadol.lan routes
 │   ├── config/
 │   └── data/
+├── caddymanager/
+│   └── data/               # SQLite database
 ├── cutter/                 # Cutter source (Dockerfile.backend, Dockerfile.frontend, frontend/)
 ├── dockhand/
 │   └── data/
@@ -330,6 +348,7 @@ docker compose logs -f dozzle
 
 | Service | Local name | Port URL | Notes |
 |---------|------------|----------|-------|
+| Caddy Manager | http://caddy.gadol.lan | http://localhost:8084 | Caddy web UI |
 | Dozzle | http://dozzle.gadol.lan | http://localhost:8080 | Log viewer |
 | FileBrowser | http://files.gadol.lan | http://localhost:8081 | File manager |
 | Homarr | http://home.gadol.lan | http://localhost:7575 | Dashboard |
@@ -417,6 +436,7 @@ Important directories to backup:
 - `./pinchflat/config/` - Pinchflat subscriptions
 - `./stirlingtools/configs/` - Stirling PDF settings
 - `./dockhand/data/` - Dockhand configuration
+- `./caddymanager/data/` - Caddy Manager users, servers and saved configs
 - `./wgeasy/config/` - WireGuard peer configs and keys
 - `./wud/data/` - WUD state
 - `./splitcam/config/` - go2rtc stream definitions

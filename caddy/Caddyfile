@@ -7,6 +7,13 @@
 #
 # After editing: docker compose restart caddy
 
+{
+	# Admin API on every interface of the container so Caddy Manager can
+	# reach caddy:2019. The default (localhost) is unreachable from other
+	# containers. Not published on the host; see docker-compose.yml.
+	admin 0.0.0.0:2019
+}
+
 # Bare IP: health check for Uptime Kuma (kuma.caddy-web label)
 http://192.168.1.200 {
 	respond "OK"
@@ -50,6 +57,10 @@ http://wud.gadol.lan {
 
 http://wg.gadol.lan {
 	reverse_proxy 192.168.1.200:51821
+}
+
+http://caddy.gadol.lan {
+	reverse_proxy 192.168.1.200:8084
 }
 
 http://glances.gadol.lan {
