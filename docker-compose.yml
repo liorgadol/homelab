@@ -91,8 +91,9 @@ services:
       - "8053:80/tcp"   # 80 belongs to Caddy
     environment:
       TZ: ${TZ}
-      WEBPASSWORD: ${PIHOLE_WEBPASSWORD}
-      SERVERIP: ${PIHOLE_SERVERIP}
+      # v6 ignores WEBPASSWORD and SERVERIP. Re-applied on every start, which
+      # also makes the password read-only in the web UI.
+      FTLCONF_webserver_api_password: ${PIHOLE_WEBPASSWORD}
       MAXDBDAYS: 30
       # Wildcard: gadol.lan and every name under it resolve to the host,
       # where Caddy routes them. Pi-hole v6 only; it also makes the
@@ -232,7 +233,7 @@ services:
       retries: 3
       start_period: 40s
 
-  # WUD - What's up Docker (update checker + auto-updater, replaces Watchtower)
+  # WUD - What's up Docker (update checker + auto-updater)
   wud:
     image: getwud/wud:latest
     container_name: wud

@@ -6,8 +6,6 @@
 # Docker volumes data
 */data/
 */appdata/
-*/db/
-dockhand/data/
 pihole/etc-pihole/
 pihole/etc-dnsmasq.d/
 stirlingtools/configs/
@@ -15,8 +13,6 @@ stirlingtools/customFiles/
 filebrowser/database/
 pinchflat/downloads
 pinchflat/config/
-immich/
-splitcam/recordings/
 /wgeasy/config/
 
 # Logs

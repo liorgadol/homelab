@@ -28,6 +28,7 @@ Web UI for the Caddy container above: Caddyfile editor with validation and versi
 **Port:** 8080  
 Real-time Docker container log viewer with a clean web interface.
 - Access at: `http://localhost:8080`
+- Data: `./dozzle/data` (users and settings)
 
 ### 📁 FileBrowser
 **Port:** 8081  
@@ -51,6 +52,7 @@ Dashboard configured in the browser (drag-and-drop layout, apps and integrations
 Network-wide ad blocker and DNS server. Also resolves `*.gadol.lan` to the host.
 - Web interface: `http://localhost:8053/admin` or `http://pihole.gadol.lan`
 - Query log retention: 30 days (`MAXDBDAYS`)
+- Admin password from `PIHOLE_WEBPASSWORD`, applied as `FTLCONF_webserver_api_password` on every start, so change it in `.env`, not in the UI
 
 ### 📺 Pinchflat
 **Port:** 8945  
@@ -71,7 +73,7 @@ Self-hosted PDF manipulation tools (merge, split, convert, etc.).
 
 ### 🔄 WUD (What's up Docker)
 **Port:** 3033  
-Checks for image updates, applies them, and sends a Telegram message on every new version found. Replaces Watchtower.
+Checks for image updates, applies them, and sends a Telegram message on every new version found.
 - Access at: `http://localhost:3033` (container listens on 3000)
 - Basic auth: user `gadol`, password from `WUD_AUTH_ADMIN_PASSWORD`
 - State stored in: `./wud/data`
@@ -165,7 +167,6 @@ TZ=Asia/Jerusalem
 
 # Pi-hole Configuration
 PIHOLE_WEBPASSWORD=your_secure_password
-PIHOLE_SERVERIP=192.168.1.100
 
 # WireGuard (wg-easy) Configuration
 WIREGUARD_PASS_HASH=your_bcrypt_password_hash
@@ -206,8 +207,7 @@ UPTIME_KUMA_PASSWORD=your_secure_password
 ### Required Variables:
 - `TZ`: Timezone for every container (e.g., Asia/Jerusalem, Europe/London). If unset, containers fall back to UTC
 - `HOMARR_SECRET_ENCRYPTION_KEY`: Key Homarr encrypts integration credentials with (`openssl rand -hex 32`). Keep it stable: a new key makes the saved credentials unreadable
-- `PIHOLE_WEBPASSWORD`: Password for Pi-hole admin interface
-- `PIHOLE_SERVERIP`: Your server's IP address
+- `PIHOLE_WEBPASSWORD`: Password for the Pi-hole admin interface
 - `WIREGUARD_PASS_HASH`: bcrypt hash for wg-easy web UI password
 - `WUD_AUTH_ADMIN_PASSWORD`: Password for the WUD web UI
 - `CAMERA_USER`, `CAMERA_PASSWORD`, `CAMERA1_IP`, `CAMERA2_IP`: RTSP credentials and addresses for go2rtc
@@ -267,6 +267,8 @@ The stack will create the following directories for persistent data:
 ├── cutter/                 # Cutter source (Dockerfile.backend, Dockerfile.frontend, frontend/)
 ├── dockhand/
 │   └── data/
+├── dozzle/
+│   └── data/               # Dozzle users and settings
 ├── emby/
 │   └── config/
 ├── filebrowser/
@@ -416,10 +418,10 @@ ports:
   - "NEW_PORT:CONTAINER_PORT"
 ```
 
-For example, to change Dozzle from port 8080 to 8082:
+For example, to change Dozzle from port 8080 to 8085:
 ```yaml
 ports:
-  - "8082:8080"
+  - "8085:8080"
 ```
 
 ## Backup
@@ -431,6 +433,10 @@ Important directories to backup:
 - `./pinchflat/config/` - Pinchflat subscriptions
 - `./stirlingtools/configs/` - Stirling PDF settings
 - `./dockhand/data/` - Dockhand configuration
+- `./dozzle/data/` - Dozzle users and settings
+- `./beszel/data/` - Beszel hub database (systems, metric history, alerts)
+- `./beszel-agent/data/` - Beszel agent state
+- `./caddy/data/` - Caddy's local CA for `immich.gadol.lan`. Losing it means installing a new root certificate on every device. Contains the CA private key: keep the backup private
 - `./caddy-ui/data/` - caddy/ui settings and Caddyfile history
 - `./wgeasy/config/` - WireGuard peer configs and keys
 - `./wud/data/` - WUD state
@@ -491,8 +497,8 @@ docker compose up -d [service_name]
 ```
 
 ### Pi-hole not blocking ads
-1. Configure your router or devices to use Pi-hole's IP as DNS server
-2. Set Pi-hole's IP to your server's IP address in the `.env` file
+1. Configure your router's DHCP to hand out the host (`192.168.1.200`) as the DNS server
+2. Remove any secondary DNS server there, or devices bypass Pi-hole
 
 ### Deploying over WireGuard
 A stack-wide `docker compose up -d` also recreates `wg-easy`. If you are connected through
@@ -535,7 +541,7 @@ Check the RTSP URL works directly (`ffprobe rtsp://user:pass@ip:554/stream1`), a
 - Change all default passwords immediately
 - Stirling PDF has security disabled - enable if exposing to internet
 - Consider placing services behind a VPN if accessing remotely (wg-easy is included for this)
-- Several services (Dozzle, Homarr, Dockhand, caddy/ui, WUD, Glances, Uptime Kuma, AutoKuma) mount `/var/run/docker.sock` - anyone with access to those containers has effective root on the host
+- Several services (Dozzle, Homarr, Dockhand, caddy/ui, WUD, Glances, Beszel agent, Uptime Kuma, AutoKuma) mount `/var/run/docker.sock` - anyone with access to those containers has effective root on the host
 - go2rtc's API is configured with `origin: "*"` and no authentication - do not expose port 1984 to the internet
 - The Telegram bot token is interpolated into an AutoKuma label, so it shows in `docker inspect autokuma` (it is already visible in `docker inspect wud` as an environment variable)
 - Camera and Windows Server share credentials live in `.env` and are interpolated into stream URLs and mount options - keep `.env` out of version control (it is already in `.gitignore`)
@@ -634,14 +640,14 @@ WUD scans every 2 hours, sends one Telegram message per newly detected version, 
 
 Two per-container opt-outs, set as Docker labels:
 
-**Monitor only** — still scanned, still notified, never updated. The replacement for Watchtower's `monitor-only=true`:
+**Monitor only** — still scanned, still notified, never updated:
 
 ```yaml
 labels:
   - "wud.trigger.exclude=docker.local"
 ```
 
-`docker.local` is the auto-update trigger's id (`{type}.{name}`); the `telegram.bot` trigger still applies. Immich uses this.
+`docker.local` is the auto-update trigger's id (`{type}.{name}`); the `telegram.bot` trigger still applies. WUD itself and Immich use this.
 
 **Ignore completely** — not scanned, not notified, not updated:
 
@@ -650,18 +656,17 @@ labels:
   - "wud.watch=false"
 ```
 
-Five containers carry this label:
+Five containers carry this label (the `immich_*` ones in Immich's own compose file at `/opt/docker/immich`):
 
 | container | reason |
 |---|---|
 | `cutter_backend`, `cutter_frontend` | built locally, no registry to check |
-| `immich_nginx_proxy` | plain `nginx:alpine`; was already excluded under Watchtower |
+| `immich_nginx_proxy` | plain `nginx:alpine` |
 | `immich_redis` | pinned `valkey:9@sha256:...`; Immich bumps it with its own releases |
 | `immich_postgres` | pinned `postgres:14-...@sha256:...`; a major bump will not start against an older data directory |
 
-Watchtower ignored the two pinned database images for free — a `@sha256:` reference is
-immutable, so there was never anything to update. WUD reads the *tag* instead and would
-find `valkey:10` or `postgres:15` as candidates, so the label is doing real work here.
+A `@sha256:` reference is immutable, but WUD reads the *tag* and would find `valkey:10`
+or `postgres:15` as candidates, so the label is needed even on pinned images.
 
 ### Testing Telegram
 
@@ -741,6 +746,8 @@ match the docs, read the source at the matching tag:
 ## License
 
 This stack uses various open-source projects. Please refer to each project's license:
+- [Caddy](https://github.com/caddyserver/caddy)
+- [caddy/ui](https://github.com/zackwag/caddy-ui)
 - [Dozzle](https://github.com/amir20/dozzle)
 - [FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser)
 - [Homarr](https://github.com/homarr-labs/homarr)
@@ -753,5 +760,6 @@ This stack uses various open-source projects. Please refer to each project's lic
 - [go2rtc](https://github.com/AlexxIT/go2rtc)
 - [Emby](https://emby.media)
 - [Glances](https://github.com/nicolargo/glances)
+- [Beszel](https://github.com/henrygd/beszel)
 - [Uptime Kuma](https://github.com/louislam/uptime-kuma)
 - [AutoKuma](https://github.com/BigBoot/AutoKuma)
