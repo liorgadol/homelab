@@ -71,7 +71,7 @@ Self-hosted PDF manipulation tools (merge, split, convert, etc.).
 
 ### 🔄 WUD (What's up Docker)
 **Port:** 3033  
-Checks for image updates, applies them, and emails on every new version found. Replaces Watchtower.
+Checks for image updates, applies them, and sends a Telegram message on every new version found. Replaces Watchtower.
 - Access at: `http://localhost:3033` (container listens on 3000)
 - Basic auth: user `gadol`, password from `WUD_AUTH_ADMIN_PASSWORD`
 - State stored in: `./wud/data`
@@ -79,7 +79,6 @@ Checks for image updates, applies them, and emails on every new version found. R
 - Watches digests as well as tags (`WATCHDIGESTDEFAULT=true`), required to detect updates on `:latest`
 - Pulls and recreates containers automatically, pruning the old images
 - Excluded from its own auto-update trigger (`wud.trigger.exclude=docker.local`): WUD 9.0.2 has no self-update guard and would stop its own container mid-swap. Bump it manually with `docker compose pull wud && docker compose up -d wud`
-- Sends one email per detected update (Gmail, implicit TLS on port 465 — see [Testing email](#testing-email))
 - Sends one Telegram message per detected update (bot `@the_gadol_bot` — see [Testing Telegram](#testing-telegram))
 - Authenticates to ghcr with a GitHub PAT (`read:packages`); anonymous tag-list queries against large repos such as Immich return HTTP 429 and the check is skipped
 - See [Updates](#updates) for per-container opt-outs
@@ -171,12 +170,6 @@ PIHOLE_SERVERIP=192.168.1.100
 # WireGuard (wg-easy) Configuration
 WIREGUARD_PASS_HASH=your_bcrypt_password_hash
 
-# WUD Email Notifications
-WUD_EMAIL_USER=your_gmail_address
-WUD_EMAIL_PASSWORD=your_gmail_app_password
-WUD_EMAIL_FROM=your_gmail_address
-WUD_EMAIL_TO=notify_address
-
 # WUD Configuration
 WUD_AUTH_ADMIN_PASSWORD=your_secure_password
 
@@ -227,7 +220,6 @@ UPTIME_KUMA_PASSWORD=your_secure_password
 ### Optional Variables:
 - `FILEBROWSER_ADMIN_PASSWORD`: Password for the FileBrowser `admin` user, re-applied on every start. If unset, FileBrowser generates one on first start and prints it in the container log
 - `GHCR_USERNAME`, `GHCR_TOKEN`: GitHub username and a PAT with `read:packages` scope, used by WUD to avoid ghcr rate limiting
-- `WUD_EMAIL_USER`, `WUD_EMAIL_PASSWORD`, `WUD_EMAIL_FROM`, `WUD_EMAIL_TO`: SMTP notification settings for WUD (Gmail). These are read by Docker Compose on the host and substituted into the `WUD_TRIGGER_SMTP_GMAIL_*` variables; WUD itself never sees them under these names. Write them literally — WUD passes the username straight to SMTP, so a URL-encoded address such as `liorgadol%40gmail.com` (as Watchtower's shoutrrr URL required) is rejected with `535-5.7.8 Username and Password not accepted`. `WUD_EMAIL_PASSWORD` is a Gmail app password, not the account password.
 - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`: Telegram notification settings for WUD and Uptime Kuma. The token comes from @BotFather. For the chat id, send the bot any message first (a bot cannot message a user who never started it), then read it from `curl -s "https://api.telegram.org/bot$TOKEN/getUpdates" | jq '.result[-1].message.chat.id'`. An empty `result` means the bot has not received a message yet.
 
 Note: every service reads `TZ` from `.env`. Images without timezone data (nginx:alpine, the cutter images) ignore it and stay on UTC. Glances also mounts the host's `/etc/localtime`.
@@ -638,20 +630,20 @@ Other monitor types and settings: <https://autokuma.bigboot.dev/dev/entity-types
 
 ## Updates
 
-WUD scans every 2 hours, emails once per newly detected version, then pulls the new image and recreates the container.
+WUD scans every 2 hours, sends one Telegram message per newly detected version, then pulls the new image and recreates the container.
 
 Two per-container opt-outs, set as Docker labels:
 
-**Monitor only** — still scanned, still emailed, never updated. The replacement for Watchtower's `monitor-only=true`:
+**Monitor only** — still scanned, still notified, never updated. The replacement for Watchtower's `monitor-only=true`:
 
 ```yaml
 labels:
   - "wud.trigger.exclude=docker.local"
 ```
 
-`docker.local` is the auto-update trigger's id (`{type}.{name}`); the `smtp.gmail` email trigger still applies. Immich uses this.
+`docker.local` is the auto-update trigger's id (`{type}.{name}`); the `telegram.bot` trigger still applies. Immich uses this.
 
-**Ignore completely** — not scanned, not emailed, not updated:
+**Ignore completely** — not scanned, not notified, not updated:
 
 ```yaml
 labels:
@@ -671,28 +663,10 @@ Watchtower ignored the two pinned database images for free — a `@sha256:` refe
 immutable, so there was never anything to update. WUD reads the *tag* instead and would
 find `valkey:10` or `postgres:15` as candidates, so the label is doing real work here.
 
-### Testing email
-
-The SMTP trigger can be fired by hand against a made-up container, which exercises the
-real credentials without waiting for an update:
-
-```bash
-P=$(grep '^WUD_AUTH_ADMIN_PASSWORD=' .env | cut -d= -f2-)
-curl -s -u "gadol:$P" \
-  -X POST http://localhost:3033/api/triggers/smtp/gmail \
-  -H 'Content-Type: application/json' \
-  -d '{"name":"email-test","watcher":"local","updateKind":{"kind":"tag","localValue":"1.0.0","remoteValue":"1.0.1","semverDiff":"patch"},"result":{}}'
-```
-
-An empty response plus `Trigger executed with success` in `docker logs wud` means the mail
-was accepted by Gmail. This bypasses the `once` bookkeeping, so it does not disturb real
-notification state. Note that a healthy-looking `[trigger.smtp.gmail] Register with
-configuration {...}` line at startup proves nothing — registration only validates the
-shape of the config, never that mail can be delivered.
-
 ### Testing Telegram
 
-Same approach as email, against the `telegram.bot` trigger:
+The Telegram trigger can be fired by hand against a made-up container, which exercises the
+real credentials without waiting for an update:
 
 ```bash
 P=$(grep '^WUD_AUTH_ADMIN_PASSWORD=' .env | cut -d= -f2-)
@@ -704,6 +678,7 @@ curl -s -u "gadol:$P" \
 
 A message on the phone plus `Trigger executed with success` in `docker logs wud` means it
 works. If the trigger fails with `chat not found`, the bot was never started from that chat.
+This bypasses the `once` bookkeeping, so it does not disturb real notification state.
 
 ### Rolling major tags (Immich)
 

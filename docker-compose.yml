@@ -276,29 +276,13 @@ services:
       # which WATCHDIGESTDEFAULT=true emits for every Docker Hub image.
       - WUD_REGISTRY_HUB_PUBLIC_SUPPRESSDIGESTWATCHWARNING=true
 
-      # Email trigger. ONCE defaults to true: one mail per detected update.
-      # Port 465 with TLS_ENABLED=true: WUD maps that flag to nodemailer's
-      # "secure", which is implicit TLS. On 587 (STARTTLS) it fails with
-      # "wrong version number".
-      - WUD_TRIGGER_SMTP_GMAIL_HOST=smtp.gmail.com
-      - WUD_TRIGGER_SMTP_GMAIL_PORT=465
-      - WUD_TRIGGER_SMTP_GMAIL_TLS_ENABLED=true
-      - WUD_TRIGGER_SMTP_GMAIL_USER=${WUD_EMAIL_USER}
-      - WUD_TRIGGER_SMTP_GMAIL_PASS=${WUD_EMAIL_PASSWORD}
-      - WUD_TRIGGER_SMTP_GMAIL_FROM_ADDRESS=${WUD_EMAIL_FROM}
-      - WUD_TRIGGER_SMTP_GMAIL_FROM_NAME=WUD
-      - WUD_TRIGGER_SMTP_GMAIL_TO=${WUD_EMAIL_TO}
-      # Mail wording. $$ escapes $ from Compose interpolation so WUD receives
-      # the ${...} placeholders. The mail fires on detection, alongside the
+      # Telegram trigger (id telegram.bot). ONCE defaults to true: one message
+      # per detected update. $$ escapes $ from Compose interpolation so WUD
+      # receives the ${...} placeholders. It fires on detection, alongside the
       # docker.local trigger, so "updated" is not confirmation the pull
       # succeeded — and containers excluded from docker.local (WUD itself)
-      # still get this mail without being updated.
-      - WUD_TRIGGER_SMTP_GMAIL_SIMPLETITLE=✅ $${container.name} updated
-      - WUD_TRIGGER_SMTP_GMAIL_SIMPLEBODY=Container $${container.name} was updated to $${container.updateKind.remoteValue}
-
-      # Telegram trigger (id telegram.bot). Same once-per-update behavior and
-      # the same caveat as the email: it fires on detection, not on a
-      # successful pull. WUD escapes the MarkdownV2 itself.
+      # still get this message without being updated. WUD escapes the
+      # MarkdownV2 itself.
       - WUD_TRIGGER_TELEGRAM_BOT_BOTTOKEN=${TELEGRAM_BOT_TOKEN}
       - WUD_TRIGGER_TELEGRAM_BOT_CHATID=${TELEGRAM_CHAT_ID}
       - WUD_TRIGGER_TELEGRAM_BOT_SIMPLETITLE=✅ $${container.name} updated
