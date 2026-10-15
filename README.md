@@ -32,8 +32,12 @@ Real-time Docker container log viewer with a clean web interface.
 ### 📁 FileBrowser
 **Port:** 8081  
 Web-based file manager for browsing and managing files.
-- Access at: `http://localhost:8081` (container listens on 8070)
+Runs [FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser), the maintained fork of FileBrowser.
+- Access at: `http://localhost:8081` (container listens on 80)
 - Files served from: `./filebrowser/data`
+- Config: `./filebrowser/config/config.yaml`; database: `./filebrowser/database/database.sqlite`
+- Runs as UID 1000, so `./filebrowser/data` and `./filebrowser/database` must be writable by it (`sudo chown -R 1000:1000 filebrowser/data filebrowser/database`)
+- Log in as `admin` with `FILEBROWSER_ADMIN_PASSWORD`. The password is re-applied on every start, so change it in `.env`, not in the UI
 
 ### 🧩 Homarr
 **Port:** 7575  
@@ -151,9 +155,8 @@ Uptime monitoring for every container in this stack, with alerts on Telegram.
 Create a `.env` file in the same directory as your `docker-compose.yml`:
 
 ```env
-# FileBrowser Configuration
-FILEBROWSER_USERNAME=admin
-FILEBROWSER_PASSWORD=changeme
+# FileBrowser admin password (user is admin)
+FILEBROWSER_ADMIN_PASSWORD=changeme
 
 # Homarr: 64 hex chars, generate with `openssl rand -hex 32`
 HOMARR_SECRET_ENCRYPTION_KEY=
@@ -222,8 +225,7 @@ UPTIME_KUMA_PASSWORD=your_secure_password
 - `UPTIME_KUMA_USERNAME`, `UPTIME_KUMA_PASSWORD`: The Uptime Kuma admin account. AutoKuma logs in with it; create the account in the UI with exactly these values
 
 ### Optional Variables:
-- `FILEBROWSER_USERNAME`: FileBrowser username (default: admin)
-- `FILEBROWSER_PASSWORD`: FileBrowser password
+- `FILEBROWSER_ADMIN_PASSWORD`: Password for the FileBrowser `admin` user, re-applied on every start. If unset, FileBrowser generates one on first start and prints it in the container log
 - `GHCR_USERNAME`, `GHCR_TOKEN`: GitHub username and a PAT with `read:packages` scope, used by WUD to avoid ghcr rate limiting
 - `WUD_EMAIL_USER`, `WUD_EMAIL_PASSWORD`, `WUD_EMAIL_FROM`, `WUD_EMAIL_TO`: SMTP notification settings for WUD (Gmail). These are read by Docker Compose on the host and substituted into the `WUD_TRIGGER_SMTP_GMAIL_*` variables; WUD itself never sees them under these names. Write them literally — WUD passes the username straight to SMTP, so a URL-encoded address such as `liorgadol%40gmail.com` (as Watchtower's shoutrrr URL required) is rejected with `535-5.7.8 Username and Password not accepted`. `WUD_EMAIL_PASSWORD` is a Gmail app password, not the account password.
 - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`: Telegram notification settings for WUD and Uptime Kuma. The token comes from @BotFather. For the chat id, send the bot any message first (a bot cannot message a user who never started it), then read it from `curl -s "https://api.telegram.org/bot$TOKEN/getUpdates" | jq '.result[-1].message.chat.id'`. An empty `result` means the bot has not received a message yet.
@@ -765,7 +767,7 @@ match the docs, read the source at the matching tag:
 
 This stack uses various open-source projects. Please refer to each project's license:
 - [Dozzle](https://github.com/amir20/dozzle)
-- [FileBrowser](https://github.com/filebrowser/filebrowser)
+- [FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser)
 - [Homarr](https://github.com/homarr-labs/homarr)
 - [Pi-hole](https://github.com/pi-hole/pi-hole)
 - [Pinchflat](https://github.com/kieraneglin/pinchflat)

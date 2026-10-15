@@ -1,0 +1,16 @@
+http:
+  port: 80
+  baseURL: "/"
+server:
+  logging:
+    - levels: "info|error|warning"
+  sources:
+    - path: "/srv"
+auth:
+  # Password comes from FILEBROWSER_ADMIN_PASSWORD and is re-applied on every start.
+  adminUsername: admin
+  methods:
+    password:
+      enabled: true
+      minLength: 5
+      signup: false

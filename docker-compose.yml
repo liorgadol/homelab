@@ -20,7 +20,7 @@ services:
 
   # FileBrowser - Web-based file manager
   filebrowser:
-    image: filebrowser/filebrowser:latest
+    image: gtstef/filebrowser:stable
     container_name: filebrowser
     labels:
       - "kuma.filebrowser.docker.name=FileBrowser"
@@ -28,12 +28,14 @@ services:
       - "kuma.filebrowser-web.http.name=FileBrowser web"
       - "kuma.filebrowser-web.http.url=http://192.168.1.200:8081/"
     restart: unless-stopped
+    # Runs as UID 1000; the mounted directories must be writable by it.
     environment:
-      - PUID=1000
-      - PGID=1000
+      - FILEBROWSER_CONFIG=/config/config.yaml
+      - FILEBROWSER_DATABASE_PATH=/database/database.sqlite
+      - FILEBROWSER_ADMIN_PASSWORD=${FILEBROWSER_ADMIN_PASSWORD}
       - TZ=${TZ}
     ports:
-      - "8081:8070"
+      - "8081:80"
     volumes:
       - ./filebrowser/data:/srv
       - ./filebrowser/config:/config
