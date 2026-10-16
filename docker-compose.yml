@@ -146,6 +146,9 @@ services:
       # Keep route titles out of the Caddyfile: its existing comments would
       # otherwise be read as titles.
       - CADDYFILE_TITLES=false
+      # Plain-HTTP origins get no Fetch Metadata from browsers, so login
+      # writes are checked against this Origin instead.
+      - CADDY_UI_EXTERNAL_URL=http://caddy.gadol.lan
       - CADDY_UI_USER=gadol
       - CADDY_UI_PASSWORD=${CADDY_UI_PASSWORD}
       # Signs login sessions. Generate with: openssl rand -base64 32
