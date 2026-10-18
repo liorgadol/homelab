@@ -127,3 +127,11 @@ https://immich.gadol.lan {
 	tls internal
 	redir https://liorgadol.ddnsfree.com:2284{uri}
 }
+
+docker.gadol.lan {
+    reverse_proxy 192.168.1.200:22
+}
+
+rpi.gadol.lan {
+    reverse_proxy 192.168.1.254
+}
