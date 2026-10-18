@@ -88,8 +88,10 @@ Checks for image updates, applies them, and sends a Telegram message on every ne
 ### 🔒 WireGuard (wg-easy)
 **Ports:** 51820 (VPN, UDP), 51821 (Web UI, TCP)  
 Self-hosted VPN server with a web UI for managing peers.
-- Web UI: `http://localhost:51821`
-- `WG_HOST` is set in `docker-compose.yml` — change it to your own public hostname/IP
+- Web UI: `http://localhost:51821` or `http://wg.gadol.lan`
+- Runs v15 (`:15`; `:latest` stopped at v14). Public host, port and the admin login are set in the first-run setup wizard, other settings in the Admin Panel; they are stored in `./wgeasy/config`, not in `.env`
+- `INSECURE=true` because the web UI is served over plain HTTP; v15 refuses logins over HTTP without it
+- Uses the same `wud.tag.transform` label as Uptime Kuma so WUD tracks the rolling `:15` tag (see [Rolling major tags](#rolling-major-tags-immich))
 
 ### 📹 go2rtc (splitcam)
 **Ports:** 1984 (Web UI/API), 8554 (RTSP), 8555 (WebRTC, TCP+UDP)  
@@ -168,9 +170,6 @@ TZ=Asia/Jerusalem
 # Pi-hole Configuration
 PIHOLE_WEBPASSWORD=your_secure_password
 
-# WireGuard (wg-easy) Configuration
-WIREGUARD_PASS_HASH=your_bcrypt_password_hash
-
 # WUD Configuration
 WUD_AUTH_ADMIN_PASSWORD=your_secure_password
 
@@ -208,7 +207,6 @@ UPTIME_KUMA_PASSWORD=your_secure_password
 - `TZ`: Timezone for every container (e.g., Asia/Jerusalem, Europe/London). If unset, containers fall back to UTC
 - `HOMARR_SECRET_ENCRYPTION_KEY`: Key Homarr encrypts integration credentials with (`openssl rand -hex 32`). Keep it stable: a new key makes the saved credentials unreadable
 - `PIHOLE_WEBPASSWORD`: Password for the Pi-hole admin interface
-- `WIREGUARD_PASS_HASH`: bcrypt hash for wg-easy web UI password
 - `WUD_AUTH_ADMIN_PASSWORD`: Password for the WUD web UI
 - `CAMERA_USER`, `CAMERA_PASSWORD`, `CAMERA1_IP`, `CAMERA2_IP`: RTSP credentials and addresses for go2rtc
 - `SMB_USER`, `SMB_PASS`: Credentials for the CIFS shares backing the Emby libraries
