@@ -149,10 +149,6 @@ services:
       # Plain-HTTP origins get no Fetch Metadata from browsers, so login
       # writes are checked against this Origin instead.
       - CADDY_UI_EXTERNAL_URL=http://caddy.gadol.lan
-      - CADDY_UI_USER=gadol
-      - CADDY_UI_PASSWORD=${CADDY_UI_PASSWORD}
-      # Signs login sessions. Generate with: openssl rand -base64 32
-      - JWT_SECRET=${CADDY_UI_JWT_SECRET}
       - TZ=${TZ}
     volumes:
       # Root-equivalent: needed to edit the Caddyfile inside the caddy container
