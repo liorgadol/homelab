@@ -18,10 +18,11 @@ Reverse proxy that maps each `*.gadol.lan` name to a service's published port.
 **Port:** 8084  
 Web UI for the Caddy container above: Caddyfile editor with validation and version history, route manager, TLS and upstream status.
 - Access at: `http://localhost:8084` or `http://caddy.gadol.lan`
-- Login: user `gadol`, password from `CADDY_UI_PASSWORD`
+- Login: username and password set on the setup screen at first visit, stored as hashes in `./caddy-ui/data/auth.json`. Until setup finishes, whoever opens the UI first can claim admin
+- Lost the password: sign in with the recovery key shown once after setup. Lost both: delete only `auth.json` and repeat setup
+- Sessions live in backend memory: restarting `caddy-ui-backend` logs everyone out
 - Saves edit `caddy/Caddyfile` in place (`docker exec` + `tee` into the `caddy` container), then reload Caddy through its admin API. The Caddyfile stays the source of truth; commit UI edits to git like hand edits
-- Data: `./caddy-ui/data` (instance list, Caddyfile history, settings)
-- Requires `CADDY_UI_PASSWORD` and `CADDY_UI_JWT_SECRET` in `.env`
+- Data: `./caddy-ui/data` (login, instance list, Caddyfile history, settings)
 - Mounts the Docker socket (root-equivalent on the host) to reach the Caddyfile
 
 ### 🔍 Dozzle
@@ -185,10 +186,6 @@ CAMERA2_IP=192.168.1.y
 SMB_USER=nas_username
 SMB_PASS=nas_password
 
-# caddy/ui login, and the key its sessions are signed with (openssl rand -base64 32)
-CADDY_UI_PASSWORD=your_secure_password
-CADDY_UI_JWT_SECRET=your_random_secret
-
 # Beszel: hub public key from its "Add System" dialog
 BESZEL_AGENT_KEY=ssh-ed25519 AAAA...
 
@@ -204,8 +201,6 @@ UPTIME_KUMA_PASSWORD=your_secure_password
 - `WUD_AUTH_ADMIN_PASSWORD`: Password for the WUD web UI
 - `CAMERA_USER`, `CAMERA_PASSWORD`, `CAMERA1_IP`, `CAMERA2_IP`: RTSP credentials and addresses for go2rtc
 - `SMB_USER`, `SMB_PASS`: Credentials for the CIFS shares backing the Emby libraries
-- `CADDY_UI_PASSWORD`: Password for the caddy/ui web UI (user `gadol`)
-- `CADDY_UI_JWT_SECRET`: Key caddy/ui signs login sessions with (`openssl rand -base64 32`). Changing it logs everyone out
 - `BESZEL_AGENT_KEY`: The Beszel hub's public key. The agent refuses hub connections until it is set
 - `UPTIME_KUMA_USERNAME`, `UPTIME_KUMA_PASSWORD`: The Uptime Kuma admin account. AutoKuma logs in with it; create the account in the UI with exactly these values
 
