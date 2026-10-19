@@ -124,12 +124,6 @@ Media server with hardware transcoding and CIFS/SMB media libraries.
 - `GIDLIST=1000,44,993` maps the container user into the host `video` (44) and `render` (993) groups; check your host's group IDs with `getent group video render`
 - Libraries are named Docker volumes mounted over CIFS from `//192.168.1.2` (Movies, Movies 2, Movies 3, Movies 4, Movies 4k, Series, Music, Camera)
 
-### 📊 Glances
-**Port:** 61208  
-System monitoring dashboard (CPU, memory, disk, containers).
-- Access at: `http://localhost:61208`
-- Runs with `pid: host` and a read-only Docker socket
-
 ### 📉 Beszel
 **Ports:** 8091 (hub web UI), 45876 (agent, host network)  
 Lightweight server monitoring with history and alerts. Hub (`beszel`) plus an agent (`beszel-agent`) for this host.
@@ -220,7 +214,7 @@ UPTIME_KUMA_PASSWORD=your_secure_password
 - `GHCR_USERNAME`, `GHCR_TOKEN`: GitHub username and a PAT with `read:packages` scope, used by WUD to avoid ghcr rate limiting
 - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`: Telegram notification settings for WUD and Uptime Kuma. The token comes from @BotFather. For the chat id, send the bot any message first (a bot cannot message a user who never started it), then read it from `curl -s "https://api.telegram.org/bot$TOKEN/getUpdates" | jq '.result[-1].message.chat.id'`. An empty `result` means the bot has not received a message yet.
 
-Note: every service reads `TZ` from `.env`. Images without timezone data (nginx:alpine, the cutter images) ignore it and stay on UTC. Glances also mounts the host's `/etc/localtime`.
+Note: every service reads `TZ` from `.env`. Images without timezone data (nginx:alpine, the cutter images) ignore it and stay on UTC.
 
 ## Quick Start
 
@@ -357,7 +351,6 @@ docker compose logs -f dozzle
 | Splitcam web | http://cams.gadol.lan | http://localhost:8082 | Camera viewer |
 | Cutter | http://cutter.gadol.lan | http://localhost:8083 | Background removal / bleed |
 | Emby | http://emby.gadol.lan | http://localhost:8096 | Media server |
-| Glances | http://glances.gadol.lan | http://localhost:61208 | System monitoring |
 | Beszel | http://beszel.gadol.lan | http://localhost:8091 | Server monitoring |
 | Uptime Kuma | http://kuma.gadol.lan | http://localhost:3002 | Uptime monitoring + Telegram alerts |
 | Router | http://router.gadol.lan | http://192.168.1.1 | Not in this stack |
@@ -539,7 +532,7 @@ Check the RTSP URL works directly (`ffprobe rtsp://user:pass@ip:554/stream1`), a
 - Change all default passwords immediately
 - Stirling PDF has security disabled - enable if exposing to internet
 - Consider placing services behind a VPN if accessing remotely (wg-easy is included for this)
-- Several services (Dozzle, Homarr, Dockhand, caddy/ui, WUD, Glances, Beszel agent, Uptime Kuma, AutoKuma) mount `/var/run/docker.sock` - anyone with access to those containers has effective root on the host
+- Several services (Dozzle, Homarr, Dockhand, caddy/ui, WUD, Beszel agent, Uptime Kuma, AutoKuma) mount `/var/run/docker.sock` - anyone with access to those containers has effective root on the host
 - go2rtc's API is configured with `origin: "*"` and no authentication - do not expose port 1984 to the internet
 - The Telegram bot token is interpolated into an AutoKuma label, so it shows in `docker inspect autokuma` (it is already visible in `docker inspect wud` as an environment variable)
 - Camera and Windows Server share credentials live in `.env` and are interpolated into stream URLs and mount options - keep `.env` out of version control (it is already in `.gitignore`)
@@ -757,7 +750,6 @@ This stack uses various open-source projects. Please refer to each project's lic
 - [wg-easy](https://github.com/wg-easy/wg-easy)
 - [go2rtc](https://github.com/AlexxIT/go2rtc)
 - [Emby](https://emby.media)
-- [Glances](https://github.com/nicolargo/glances)
 - [Beszel](https://github.com/henrygd/beszel)
 - [Uptime Kuma](https://github.com/louislam/uptime-kuma)
 - [AutoKuma](https://github.com/BigBoot/AutoKuma)

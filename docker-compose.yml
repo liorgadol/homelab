@@ -330,26 +330,6 @@ services:
       - net.ipv4.conf.all.src_valid_mark=1
     restart: unless-stopped
 
-  # Glances - System monitoring dashboard
-  glances:
-    image: nicolargo/glances:latest
-    container_name: glances
-    labels:
-      - "kuma.glances.docker.name=Glances"
-      - "kuma.glances.docker.docker_container=glances"
-      - "kuma.glances-web.http.name=Glances web"
-      - "kuma.glances-web.http.url=http://192.168.1.200:61208/"
-    restart: unless-stopped
-    pid: host
-    ports:
-      - "61208:61208"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /etc/localtime:/etc/localtime:ro
-    environment:
-      - GLANCES_OPT=-w
-      - TZ=${TZ}
-
   # Beszel - Server monitoring hub (history, alerts). Systems are added in its
   # UI; the agent below reports this host.
   beszel:
