@@ -83,6 +83,10 @@ http://cutter.gadol.lan {
 	reverse_proxy 192.168.1.200:8083
 }
 
+http://config.gadol.lan {
+	reverse_proxy 192.168.1.200:8085
+}
+
 http://emby.gadol.lan {
 	reverse_proxy 192.168.1.200:8096
 }

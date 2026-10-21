@@ -116,6 +116,16 @@ Image background removal (rembg) and print bleed tool. Built from source in `./c
 - First build downloads the `u2net` model (~170MB) and bakes it into the image (~3-5 min)
 - Excluded from WUD entirely via `wud.watch=false` (locally built images have no registry to check)
 
+### 🛠️ Config Manager
+**Port:** 8085  
+Web editor (Monaco) for config files on the host. Built from source in `./configmng`.
+- Access at: `http://localhost:8085`, user `gadol`, password `CONFIGMNG_PASSWORD`
+- Only files declared as `CONFIG_<name>` in `docker-compose.yml` are visible; mount the file's folder, not the file
+- `RESTART_<name>` runs on the host after "Save & restart" (e.g. `systemctl restart linuxexecbot`, or `docker restart <container>`)
+- YAML/JSON/TOML validated before save; backups (last 20 per file) and activity log in `./configmng/data`
+- `privileged: true` + `pid: host`: root-equivalent on the host. LAN/VPN only
+- Excluded from WUD via `wud.watch=false`
+
 ### 🎬 Emby
 **Ports:** 8096 (HTTP), 8920 (HTTPS)  
 Media server with hardware transcoding and CIFS/SMB media libraries.
@@ -198,6 +208,10 @@ BESZEL_AGENT_KEY=ssh-ed25519 AAAA...
 # Uptime Kuma admin account, used by AutoKuma to log in
 UPTIME_KUMA_USERNAME=admin
 UPTIME_KUMA_PASSWORD=your_secure_password
+
+# Config Manager login (user gadol); single-quote it if it contains "$"
+CONFIGMNG_PASSWORD=your_secure_password
+CONFIGMNG_SESSION_SECRET=
 ```
 
 ### Required Variables:
@@ -209,11 +223,13 @@ UPTIME_KUMA_PASSWORD=your_secure_password
 - `SMB_USER`, `SMB_PASS`: Credentials for the CIFS shares backing the Emby libraries
 - `BESZEL_AGENT_KEY`: The Beszel hub's public key. The agent refuses hub connections until it is set
 - `UPTIME_KUMA_USERNAME`, `UPTIME_KUMA_PASSWORD`: The Uptime Kuma admin account. AutoKuma logs in with it; create the account in the UI with exactly these values
+- `CONFIGMNG_PASSWORD`: Password for the Config Manager `gadol` user. Single-quote the value if it contains `$`
 
 ### Optional Variables:
 - `FILEBROWSER_ADMIN_PASSWORD`: Password for the FileBrowser `admin` user, re-applied on every start. If unset, FileBrowser generates one on first start and prints it in the container log
 - `GHCR_USERNAME`, `GHCR_TOKEN`: GitHub username and a PAT with `read:packages` scope, used by WUD to avoid ghcr rate limiting
 - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`: Telegram notification settings for WUD and Uptime Kuma. The token comes from @BotFather. For the chat id, send the bot any message first (a bot cannot message a user who never started it), then read it from `curl -s "https://api.telegram.org/bot$TOKEN/getUpdates" | jq '.result[-1].message.chat.id'`. An empty `result` means the bot has not received a message yet.
+- `CONFIGMNG_SESSION_SECRET`: Keeps Config Manager logins across restarts (`openssl rand -hex 32`). If unset, a random one is made on each start
 
 Note: every service reads `TZ` from `.env`. Images without timezone data (nginx:alpine, the cutter images) ignore it and stay on UTC. Glances also mounts the host's `/etc/localtime`.
 
@@ -257,6 +273,8 @@ The stack will create the following directories for persistent data:
 │   └── data/
 ├── caddy-ui/
 │   └── data/               # caddy/ui instances, Caddyfile history
+├── configmng/              # Config Manager source (Dockerfile, app/)
+│   └── data/               # backups + audit.log
 ├── cutter/                 # Cutter source (Dockerfile.backend, Dockerfile.frontend, frontend/)
 ├── dockhand/
 │   └── data/
@@ -319,10 +337,10 @@ docker compose pull
 docker compose up -d
 ```
 
-### Rebuild the locally built services (Cutter)
+### Rebuild the locally built services (Cutter, Config Manager)
 ```bash
-docker compose build cutter-backend cutter-frontend
-docker compose up -d cutter-backend cutter-frontend
+docker compose build cutter-backend cutter-frontend configmng
+docker compose up -d cutter-backend cutter-frontend configmng
 ```
 
 ### View logs
@@ -351,6 +369,7 @@ docker compose logs -f dozzle
 | go2rtc | http://go2rtc.gadol.lan | http://localhost:1984 | Camera stream server |
 | Splitcam web | http://cams.gadol.lan | http://localhost:8082 | Camera viewer |
 | Cutter | http://cutter.gadol.lan | http://localhost:8083 | Background removal / bleed |
+| Config Manager | http://config.gadol.lan | http://localhost:8085 | Host config file editor |
 | Emby | http://emby.gadol.lan | http://localhost:8096 | Media server |
 | Glances | http://glances.gadol.lan | http://localhost:61208 | System monitoring |
 | Beszel | http://beszel.gadol.lan | http://localhost:8091 | Server monitoring |

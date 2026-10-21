@@ -481,6 +481,39 @@ services:
     networks:
       - cutter-net
 
+  # Config Manager - Web editor for host config files. Built from source in
+  # ./configmng. Only files declared as CONFIG_<name> are visible;
+  # RESTART_<name> runs on the host after "Save & restart".
+  configmng:
+    build: ./configmng
+    container_name: configmng
+    restart: unless-stopped
+    labels:
+      - "wud.watch=false"
+      - "kuma.configmng.docker.name=Config Manager"
+      - "kuma.configmng.docker.docker_container=configmng"
+      - "kuma.configmng-web.http.name=Config Manager web"
+      - "kuma.configmng-web.http.url=http://192.168.1.200:8085/"
+    ports:
+      - "8085:8080"   # 8080 belongs to Dozzle
+    # Root-equivalent on the host: RESTART_* commands nsenter into PID 1.
+    # LAN/VPN only. Remove both lines to keep editing without restarts.
+    privileged: true
+    pid: host
+    environment:
+      - AUTH_USER=gadol
+      - AUTH_PASSWORD=${CONFIGMNG_PASSWORD}
+      - SESSION_SECRET=${CONFIGMNG_SESSION_SECRET}
+      - TZ=${TZ}
+      # ---- Config files: the ONLY files the UI can see ----
+      - CONFIG_LinuxExecBot=/configs/LinuxExecBot/config.yaml
+      - RESTART_LinuxExecBot=systemctl restart linuxexecbot
+    volumes:
+      - ./configmng/data:/data   # backups + activity log
+      # Mount the folder, not the file: editors that replace the file on
+      # the host would otherwise leave the container on the old inode.
+      - /etc/LinuxExecBot:/configs/LinuxExecBot
+
   # Emby - Media server (hw transcode via /dev/dri, libraries over CIFS)
   emby:
     image: emby/embyserver:latest
