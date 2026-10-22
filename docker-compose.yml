@@ -124,6 +124,8 @@ services:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile
       - ./caddy/data:/data
       - ./caddy/config:/config
+      # Request log (import access_log in the Caddyfile), read by caddy/ui
+      - ./caddy/logs:/var/log/caddy
     environment:
       - TZ=${TZ}
 

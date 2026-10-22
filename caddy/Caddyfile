@@ -6,6 +6,9 @@
 # turns off Caddy's automatic HTTPS for that site.
 #
 # After editing: docker compose restart caddy
+#
+# Every site except the bare-IP health check starts with import access_log,
+# so caddy/ui can show its requests. Add it to new sites too.
 
 {
 	# Admin API on every interface of the container so caddy/ui and Homarr
@@ -14,12 +17,25 @@
 	admin 0.0.0.0:2019
 }
 
+# Request log for caddy/ui (Access Logs > Caddy reads CADDY_LOG_PATH, default
+# /var/log/caddy/access.log). Mounted to caddy/logs; rolls at 10MiB, keeps 5.
+(access_log) {
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 10MiB
+			roll_keep 5
+		}
+		format json
+	}
+}
+
 # Bare IP: health check for Uptime Kuma (kuma.caddy-web label)
 http://192.168.1.200 {
 	respond "OK"
 }
 
 http://home.gadol.lan {
+	import access_log
 	# Homarr dashboard. Upstream sees IP:port as Host, same as direct access.
 	reverse_proxy 192.168.1.200:7575 {
 		header_up Host {upstream_hostport}
@@ -27,83 +43,102 @@ http://home.gadol.lan {
 }
 
 http://dozzle.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.200:8080
 }
 
 http://files.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.200:8081
 }
 
 http://pihole.gadol.lan {
+	import access_log
 	redir / /admin/
 	reverse_proxy 192.168.1.200:8053
 }
 
 http://pinchflat.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.200:8945
 }
 
 http://dockhand.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.200:3001
 }
 
 http://pdf.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.200:8090
 }
 
 http://wud.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.200:3033
 }
 
 http://wg.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.200:51821
 }
 
 http://caddy.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.200:8084
 }
 
 http://glances.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.200:61208
 }
 
 http://beszel.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.200:8091
 }
 
 http://go2rtc.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.200:1984
 }
 
 http://cams.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.200:8082
 }
 
 http://cutter.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.200:8083
 }
 
 http://config.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.200:8085
 }
 
 http://emby.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.200:8096
 }
 
 http://kuma.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.200:3002
 }
 
 # Network gear outside Docker. Router admin pages often reject a Host
 # header that is not their own IP, so send the IP instead.
 http://router.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.1:80 {
 		header_up Host {upstream_hostport}
 	}
 }
 
 http://ap.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.150:80 {
 		header_up Host {upstream_hostport}
 	}
@@ -112,6 +147,7 @@ http://ap.gadol.lan {
 # qBittorrent on the Windows Server. Its CSRF check rejects requests whose Origin or
 # Referer differs from the Host it sees, so send its own address and drop both.
 http://torrent.gadol.lan {
+	import access_log
 	reverse_proxy 192.168.1.2:8090 {
 		header_up Host {upstream_hostport}
 		header_up -Origin
@@ -128,6 +164,7 @@ http://torrent.gadol.lan {
 # with Caddy's local CA, whose root certificate each device must trust
 # (caddy/data/caddy/pki/authorities/local/root.crt).
 https://immich.gadol.lan {
+	import access_log
 	tls internal
 	redir https://liorgadol.ddnsfree.com:2284{uri}
 }
