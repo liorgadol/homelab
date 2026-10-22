@@ -19,13 +19,28 @@
 
 # Request log for caddy/ui (Access Logs > Caddy reads CADDY_LOG_PATH, default
 # /var/log/caddy/access.log). Mounted to caddy/logs; rolls at 10MiB, keeps 5.
+# Kept short: request and response headers are dropped, and static assets,
+# event streams and websockets (UIs polling or holding a connection open)
+# are not logged at all.
 (access_log) {
+	@log_noise {
+		path *.js *.mjs *.css *.map *.png *.jpg *.jpeg *.gif *.svg *.ico *.webp *.woff *.woff2 *.ttf
+	}
+	@log_stream header Accept *text/event-stream*
+	@log_websocket header Connection *Upgrade*
+	log_skip @log_noise
+	log_skip @log_stream
+	log_skip @log_websocket
 	log {
 		output file /var/log/caddy/access.log {
 			roll_size 10MiB
 			roll_keep 5
 		}
-		format json
+		format filter {
+			wrap json
+			request>headers delete
+			resp_headers delete
+		}
 	}
 }
 
@@ -85,6 +100,9 @@ http://wg.gadol.lan {
 
 http://caddy.gadol.lan {
 	import access_log
+	# Not logged: caddy/ui polls its own API while open, so reading the log
+	# would fill it with the viewer's own requests.
+	log_skip
 	reverse_proxy 192.168.1.200:8084
 }
 
