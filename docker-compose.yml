@@ -171,6 +171,14 @@ services:
       - caddy-ui-backend
     ports:
       - "8084:80"
+    # The image checks http://localhost/, which resolves to ::1, but its
+    # nginx only listens on IPv4, so the built-in check always fails.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     environment:
       - TZ=${TZ}
 
