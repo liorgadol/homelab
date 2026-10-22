@@ -120,9 +120,11 @@ Image background removal (rembg) and print bleed tool. Built from source in `./c
 **Port:** 8085  
 Web editor (Monaco) for config files on the host. Built from source in `./configmng`.
 - Access at: `http://localhost:8085`, user `gadol`, password `CONFIGMNG_PASSWORD`
-- Only files declared as `CONFIG_<name>` in `docker-compose.yml` are visible; mount the file's folder, not the file
+- Only files declared as `CONFIG_<name>` in `docker-compose.yml` are visible; mount the file's folder, not the file (exception: `/etc/hosts`, single-file mount since `/etc` is too broad)
+- Current files: LinuxExecBot `config.yaml`, `gadol` crontab, `/etc/hosts`
 - `RESTART_<name>` runs on the host after "Save & restart" (e.g. `systemctl restart linuxexecbot`, or `docker restart <container>`)
-- YAML/JSON/TOML validated before save; backups (last 20 per file) and activity log in `./configmng/data`
+- Crontab: use "Save & restart" — it touches `/var/spool/cron/crontabs` so cron reloads (plain Save is not picked up). `/etc/hosts` applies immediately
+- YAML/JSON/TOML validated before save (crontab and hosts are not); backups (last 20 per file) and activity log in `./configmng/data`
 - `privileged: true` + `pid: host`: root-equivalent on the host. LAN/VPN only
 - Excluded from WUD via `wud.watch=false`
 
