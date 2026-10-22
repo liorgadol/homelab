@@ -508,11 +508,21 @@ services:
       # ---- Config files: the ONLY files the UI can see ----
       - CONFIG_LinuxExecBot=/configs/LinuxExecBot/config.yaml
       - RESTART_LinuxExecBot=systemctl restart linuxexecbot
+      # cron only rescans when the spool dir mtime changes; an in-place
+      # save doesn't touch the dir, so "restart" bumps it.
+      - CONFIG_crontab_gadol=/configs/crontabs/gadol
+      - RESTART_crontab_gadol=touch /var/spool/cron/crontabs
+      # Re-read on every lookup; no restart needed.
+      - CONFIG_hosts=/configs/hosts/hosts
     volumes:
       - ./configmng/data:/data   # backups + activity log
       # Mount the folder, not the file: editors that replace the file on
       # the host would otherwise leave the container on the old inode.
       - /etc/LinuxExecBot:/configs/LinuxExecBot
+      - /var/spool/cron/crontabs:/configs/crontabs   # crontab -e replaces the file
+      # Single file: mounting all of /etc is too broad. Nothing on the host
+      # rewrites /etc/hosts by rename, so the inode stays put.
+      - /etc/hosts:/configs/hosts/hosts
 
   # Emby - Media server (hw transcode via /dev/dri, libraries over CIFS)
   emby:
