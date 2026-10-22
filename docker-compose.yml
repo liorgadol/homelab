@@ -142,6 +142,14 @@ services:
     restart: unless-stopped
     depends_on:
       - caddy
+    # The image checks GET /, which this backend answers with 404, so the
+    # built-in check always fails. /api/version is the unauthenticated route.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -Y off -T 3 -O /dev/null http://127.0.0.1:3001/api/version || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     environment:
       # Creates the instance for the caddy container on first start
       - CADDY_ADMIN_URL=http://caddy:2019
