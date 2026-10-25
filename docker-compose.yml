@@ -504,6 +504,22 @@ services:
     networks:
       - cutter-net
 
+  # withoutBG - Background removal web app + API (open weights v3, CPU).
+  # Stateless: the ~1.5GB model is baked into the image.
+  withoutbg:
+    image: withoutbg/withoutbg-openweights-v3-app-cpu:latest
+    container_name: withoutbg
+    labels:
+      - "kuma.withoutbg.docker.name=withoutBG"
+      - "kuma.withoutbg.docker.docker_container=withoutbg"
+      - "kuma.withoutbg-web.http.name=withoutBG web"
+      - "kuma.withoutbg-web.http.url=http://192.168.1.200:8086/health"
+    restart: unless-stopped
+    ports:
+      - "8086:8080"   # 8080 belongs to Dozzle
+    environment:
+      - TZ=${TZ}
+
   # Config Manager - Web editor for host config files. Built from source in
   # ./configmng. Only files declared as CONFIG_<name> are visible;
   # RESTART_<name> runs on the host after "Save & restart".

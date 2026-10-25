@@ -131,6 +131,11 @@ http://cutter.gadol.lan {
 	reverse_proxy 192.168.1.200:8083
 }
 
+http://withoutbg.gadol.lan {
+	import access_log
+	reverse_proxy 192.168.1.200:8086
+}
+
 http://config.gadol.lan {
 	import access_log
 	reverse_proxy 192.168.1.200:8085

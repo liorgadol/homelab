@@ -116,6 +116,13 @@ Image background removal (rembg) and print bleed tool. Built from source in `./c
 - First build downloads the `u2net` model (~170MB) and bakes it into the image (~3-5 min)
 - Excluded from WUD entirely via `wud.watch=false` (locally built images have no registry to check)
 
+### 🪄 withoutBG
+**Port:** 8086  
+Background removal web app with a built-in API ([withoutBG Open Weights v3](https://withoutbg.com/open-model), CPU image).
+- Access at: `http://localhost:8086` or `http://withoutbg.gadol.lan` (container listens on 8080; 8080 on the host is Dozzle)
+- API: `POST /api/v1/remove-background`; health at `/health`
+- Stateless, no volumes: the ~1.5GB model is baked into the image, so the first pull is large
+
 ### 🛠️ Config Manager
 **Port:** 8085  
 Web editor (Monaco) for config files on the host. Built from source in `./configmng`.
@@ -371,6 +378,7 @@ docker compose logs -f dozzle
 | go2rtc | http://go2rtc.gadol.lan | http://localhost:1984 | Camera stream server |
 | Splitcam web | http://cams.gadol.lan | http://localhost:8082 | Camera viewer |
 | Cutter | http://cutter.gadol.lan | http://localhost:8083 | Background removal / bleed |
+| withoutBG | http://withoutbg.gadol.lan | http://localhost:8086 | Background removal (open weights v3) |
 | Config Manager | http://config.gadol.lan | http://localhost:8085 | Host config file editor |
 | Emby | http://emby.gadol.lan | http://localhost:8096 | Media server |
 | Glances | http://glances.gadol.lan | http://localhost:61208 | System monitoring |
