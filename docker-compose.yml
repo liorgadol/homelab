@@ -277,7 +277,8 @@ services:
       # WATCHDIGESTDEFAULT=true is required for :latest tags on Docker Hub,
       # otherwise digest-only updates are never detected; the 2h interval keeps
       # the resulting manifest queries under Docker Hub's anonymous quota.
-      - WUD_WATCHER_LOCAL_CRON=0 */2 * * *
+      # Minute 17, not 0: ghcr throttles bursts at the top of the hour.
+      - WUD_WATCHER_LOCAL_CRON=17 */2 * * *
       - WUD_WATCHER_LOCAL_WATCHBYDEFAULT=true
       - WUD_WATCHER_LOCAL_WATCHDIGESTDEFAULT=true
 
@@ -289,6 +290,10 @@ services:
       # (immich) hit HTTP 429 and the container check is skipped.
       - WUD_REGISTRY_GHCR_PUBLIC_USERNAME=${GHCR_USERNAME}
       - WUD_REGISTRY_GHCR_PUBLIC_TOKEN=${GHCR_TOKEN}
+      # One ghcr request at a time (default 2). A 429 while resolving the
+      # local digest makes WUD 9.0.2 silently compare the index digest with
+      # the platform digest and report a false update (seen on immich_server).
+      - WUD_REGISTRY_GHCR_PUBLIC_CONCURRENCY=1
 
       # Silence the per-image "watching digest may be throttled" warning,
       # which WATCHDIGESTDEFAULT=true emits for every Docker Hub image.
