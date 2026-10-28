@@ -304,7 +304,8 @@ The stack will create the following directories for persistent data:
 │   ├── config/
 │   └── downloads/
 ├── scripts/
-│   └── emby-backup.sh
+│   ├── emby-backup.sh
+│   └── stack-backup.sh
 ├── splitcam/
 │   ├── config/go2rtc.yaml
 │   ├── index.html
@@ -466,6 +467,64 @@ Important directories to backup:
 - `./emby/config/` - Emby settings, library definitions and metadata
 - `./uptime-kuma/data/` - Uptime Kuma database (monitor history, admin account)
 - `./autokuma/data/` - AutoKuma's map of label ids to Uptime Kuma ids; back it up together with `./uptime-kuma/data/`
+
+### Stack backup script (Restic)
+
+`scripts/stack-backup.sh` backs up the whole stack folder (no excludes) plus `/etc/LinuxExecBot` into a
+Restic repository on the SMB share:
+
+1. `docker compose down` (every service, so the SQLite databases are consistent)
+2. `restic backup`
+3. `docker compose up -d --wait`, then restarts `autokuma` (fresh Uptime Kuma session)
+4. `restic forget --prune` with the retention policy, after the stack is back up
+5. `restic check --read-data-subset=10%` on Sundays
+6. Pings an Uptime Kuma push monitor
+
+Once the stack is down, every exit path (failure, Ctrl-C, dropped SSH session) brings it back up.
+Telegram messages are sent only on failure, or when the stack does not come back healthy (with the
+list of services that are not). Success is silent; the push monitor catches runs that never happen.
+DNS is down while the stack is down (Pi-hole), so mount the share and point `KUMA_PUSH_URL` at IPs, not hostnames.
+
+One-time setup on the host (as root):
+
+```bash
+apt install restic && restic self-update
+openssl rand -base64 32 > /root/.restic-pass && chmod 600 /root/.restic-pass   # keep a copy off the host
+mountpoint /mnt/homelab_backup
+GODEBUG=asyncpreemptoff=1 restic -r /mnt/homelab_backup/restic -p /root/.restic-pass init
+```
+
+In Uptime Kuma add a **Push** monitor with a heartbeat interval of 90000s (25h) and put its URL in `.env`
+as `KUMA_PUSH_URL`. Run the first backup by hand inside `tmux`: it copies everything, so it has the longest downtime.
+
+```cron
+0 4 * * * /opt/docker/homelab/scripts/stack-backup.sh
+```
+
+Defaults (override with environment variables):
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `STACK_DIR` | `/opt/docker/homelab` | Compose project folder to back up |
+| `EXTRA_PATHS` | `/etc/LinuxExecBot` | Space separated host paths backed up alongside it |
+| `BACKUP_MOUNT` | `/mnt/homelab_backup` | SMB mountpoint; the run fails if it is not mounted |
+| `RESTIC_REPOSITORY` | `$BACKUP_MOUNT/restic` | Restic repository |
+| `RESTIC_PASSWORD_FILE` | `/root/.restic-pass` | Repository password. Lose it and the backups are unreadable |
+| `KEEP_DAILY` / `KEEP_WEEKLY` / `KEEP_MONTHLY` | `14` / `8` / `12` | Retention |
+| `CHECK_DAY` / `CHECK_SUBSET` | `7` (Sunday) / `10%` | When `restic check` runs and how much data it reads |
+| `STOP_TIMEOUT` | `60` | Seconds to wait for a clean shutdown |
+| `HEALTH_TIMEOUT` | `300` | Seconds to wait for the stack to be running and healthy |
+| `ENV_FILE` | `$STACK_DIR/.env` | Where `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` and `KUMA_PUSH_URL` are read from |
+| `LOG` | `/var/log/stack-backup.log` | Log file (local, so it works when the share is missing) |
+
+Restore examples:
+
+```bash
+export RESTIC_REPOSITORY=/mnt/homelab_backup/restic RESTIC_PASSWORD_FILE=/root/.restic-pass
+restic snapshots
+restic restore latest --target /tmp/restore --include /opt/docker/homelab/uptime-kuma
+restic mount /mnt/restic   # browse every snapshot as folders
+```
 
 ### Emby config backup script
 
