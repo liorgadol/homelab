@@ -7,8 +7,8 @@
 # and pings an Uptime Kuma push monitor.
 # Sends a Telegram message if anything fails or the stack does not come back healthy.
 #
-# Usage:  sudo ./stack-backup.sh
-# Cron:   set it up yourself, e.g. 0 4 * * * /opt/docker/homelab/scripts/stack-backup.sh
+# Usage:  sudo ./homelab-backup.sh
+# Cron:   set it up yourself, e.g. 0 4 * * * /opt/docker/homelab/scripts/homelab-backup.sh
 #
 set -euo pipefail
 
@@ -25,8 +25,8 @@ CHECK_SUBSET="${CHECK_SUBSET:-10%}"         # share of pack data read and verifi
 STOP_TIMEOUT="${STOP_TIMEOUT:-60}"          # seconds docker waits for a clean shutdown
 HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-300}"     # seconds to wait for the stack to be running/healthy
 ENV_FILE="${ENV_FILE:-${STACK_DIR}/.env}"   # source of the Telegram credentials and Kuma push URL
-LOG="${LOG:-/var/log/stack-backup.log}"
-LOCK_FILE="${LOCK_FILE:-/run/stack-backup.lock}"
+LOG="${LOG:-/var/log/homelab-backup.log}"
+LOCK_FILE="${LOCK_FILE:-/run/homelab-backup.lock}"
 
 # Restic is Go: on CIFS mounts, Go's async preemption signals can surface as
 # "interrupted system call" errors on older kernels. Turning it off is harmless.
@@ -109,7 +109,7 @@ trap 'exit 143' TERM
 # --- preflight ---------------------------------------------------------------
 [ "$(id -u)" -eq 0 ] || die "must run as root (stack files are owned by several users, password file is root-only)"
 exec 9>"$LOCK_FILE"
-flock -n 9 || die "another stack-backup is already running"
+flock -n 9 || die "another homelab-backup is already running"
 command -v docker >/dev/null || die "docker not found in PATH"
 command -v restic >/dev/null || die "restic not found in PATH"
 [ -f "${STACK_DIR}/docker-compose.yml" ] || die "compose file not found: ${STACK_DIR}/docker-compose.yml"

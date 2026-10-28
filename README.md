@@ -305,7 +305,7 @@ The stack will create the following directories for persistent data:
 │   └── downloads/
 ├── scripts/
 │   ├── emby-backup.sh
-│   └── stack-backup.sh
+│   └── homelab-backup.sh
 ├── splitcam/
 │   ├── config/go2rtc.yaml
 │   ├── index.html
@@ -470,7 +470,7 @@ Important directories to backup:
 
 ### Stack backup script (Restic)
 
-`scripts/stack-backup.sh` backs up the whole stack folder (no excludes) plus `/etc/LinuxExecBot` into a
+`scripts/homelab-backup.sh` backs up the whole stack folder (no excludes) plus `/etc/LinuxExecBot` into a
 Restic repository on the SMB share:
 
 1. `docker compose down` (every service, so the SQLite databases are consistent)
@@ -498,7 +498,7 @@ In Uptime Kuma add a **Push** monitor with a heartbeat interval of 90000s (25h) 
 as `KUMA_PUSH_URL`. Run the first backup by hand inside `tmux`: it copies everything, so it has the longest downtime.
 
 ```cron
-0 4 * * * /opt/docker/homelab/scripts/stack-backup.sh
+0 4 * * * /opt/docker/homelab/scripts/homelab-backup.sh
 ```
 
 Defaults (override with environment variables):
@@ -515,7 +515,7 @@ Defaults (override with environment variables):
 | `STOP_TIMEOUT` | `60` | Seconds to wait for a clean shutdown |
 | `HEALTH_TIMEOUT` | `300` | Seconds to wait for the stack to be running and healthy |
 | `ENV_FILE` | `$STACK_DIR/.env` | Where `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` and `KUMA_PUSH_URL` are read from |
-| `LOG` | `/var/log/stack-backup.log` | Log file (local, so it works when the share is missing) |
+| `LOG` | `/var/log/homelab-backup.log` | Log file (local, so it works when the share is missing) |
 
 Restore examples:
 
