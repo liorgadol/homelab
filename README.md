@@ -508,7 +508,7 @@ Defaults (override with environment variables):
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `STACK_DIR` | `/opt/docker/homelab` | Compose project folder to back up |
-| `EXTRA_PATHS` | `/etc/LinuxExecBot` | Space separated host paths backed up alongside it |
+| `EXTRA_PATHS` | `/etc/LinuxExecBot /etc/fstab /etc/systemd/system/homelab-up.service` | Space separated host paths backed up alongside it |
 | `BACKUP_MOUNT` | `/mnt/homelab_backup` | SMB mountpoint; the run fails if it is not mounted |
 | `RESTIC_REPOSITORY` | `$BACKUP_MOUNT/restic` | Restic repository |
 | `RESTIC_PASSWORD_FILE` | `/root/.restic-pass` | Repository password. Lose it and the backups are unreadable |
@@ -518,6 +518,7 @@ Defaults (override with environment variables):
 | `HEALTH_TIMEOUT` | `300` | Seconds to wait for the stack to be running and healthy |
 | `BACKUP_TIMEOUT` | `7200` | Seconds before a stuck `restic backup` (e.g. hung share) is killed and the stack restored |
 | `PREFLIGHT_TIMEOUT` | `30` | Seconds for the share and repository checks |
+| `MAINT_TIMEOUT` | `10800` | Seconds before a stuck `restic forget --prune` or `restic check` is killed |
 | `ENV_FILE` | `$STACK_DIR/.env` | Where `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` and `KUMA_PUSH_URL` are read from |
 | `LOG` | `/var/log/homelab-backup.log` | Log file (local, so it works when the share is missing) |
 
@@ -555,10 +556,13 @@ silent. cron does not load the compose `.env`, so the script reads the two Teleg
 `ENV_FILE` itself; values already in the environment take precedence. Without them it logs a
 warning and skips the notification. A failed notification never fails the backup.
 
-The root check is disabled: it runs as root or as a user in the `docker` group that can read the whole config tree and write to `BACKUP_DIR`. A file it cannot read fails the tar step, which sends the Telegram alert. Example cron entry (daily at 04:00):
+The root check is disabled: it runs as root or as a user in the `docker` group that can read the whole config tree and write to `BACKUP_DIR`. A file it cannot read fails the tar step, which sends the Telegram alert.
+
+Not scheduled: `homelab-backup.sh` already backs up `emby/config`, and both at 04:00 would collide
+(`compose down` removes the container `emby-backup.sh` stopped). The cron line stays commented out:
 
 ```cron
-0 4 * * * /opt/docker/homelab/scripts/emby-backup.sh
+# 0 4 * * * /opt/docker/homelab/scripts/emby-backup.sh
 ```
 
 ## Troubleshooting

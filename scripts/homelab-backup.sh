@@ -13,7 +13,7 @@
 set -euo pipefail
 
 STACK_DIR="${STACK_DIR:-/opt/docker/homelab}"
-EXTRA_PATHS="${EXTRA_PATHS:-/etc/LinuxExecBot}"     # space separated, backed up alongside STACK_DIR
+EXTRA_PATHS="${EXTRA_PATHS:-/etc/LinuxExecBot /etc/fstab /etc/systemd/system/homelab-up.service}"     # space separated, backed up alongside STACK_DIR
 BACKUP_MOUNT="${BACKUP_MOUNT:-/mnt/homelab_backup}"
 export RESTIC_REPOSITORY="${RESTIC_REPOSITORY:-${BACKUP_MOUNT}/restic}"
 export RESTIC_PASSWORD_FILE="${RESTIC_PASSWORD_FILE:-/root/.restic-pass}"
@@ -26,6 +26,7 @@ STOP_TIMEOUT="${STOP_TIMEOUT:-60}"          # seconds docker waits for a clean s
 HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-300}"     # seconds to wait for the stack to be running/healthy
 BACKUP_TIMEOUT="${BACKUP_TIMEOUT:-7200}"    # seconds before a stuck restic backup (e.g. hung share) is killed
 PREFLIGHT_TIMEOUT="${PREFLIGHT_TIMEOUT:-30}" # seconds for the share/repository checks
+MAINT_TIMEOUT="${MAINT_TIMEOUT:-10800}"     # seconds for each of restic forget/prune and check
 ENV_FILE="${ENV_FILE:-${STACK_DIR}/.env}"   # source of the Telegram credentials and Kuma push URL
 LOG="${LOG:-/var/log/homelab-backup.log}"
 LOCK_FILE="${LOCK_FILE:-/run/homelab-backup.lock}"
@@ -112,7 +113,9 @@ on_exit() {
 }
 trap on_exit EXIT
 # Ignore hangups: down stops wg-easy, which drops an SSH session that comes in
-# over the VPN. The ignore is inherited by restic and docker, so the run finishes.
+# over the VPN. The ignore is inherited by docker and tee. timeout installs its
+# own HUP handler (coreutils < 9.10), which resets to default in its child, so
+# every restic under timeout is started through nohup to ignore HUP again.
 trap '' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
@@ -128,10 +131,11 @@ for p in $EXTRA_PATHS; do
     [ -e "$p" ] || die "extra path not found: $p"
 done
 # Hard fail: without the share, restic would write to the root filesystem.
-timeout "$PREFLIGHT_TIMEOUT" mountpoint -q "$BACKUP_MOUNT" \
+# -k: a process stuck on a dead CIFS share ignores TERM, only KILL gets through.
+timeout -k 5 "$PREFLIGHT_TIMEOUT" mountpoint -q "$BACKUP_MOUNT" \
     || die "backup share not mounted or not responding: $BACKUP_MOUNT"
 [ -r "$RESTIC_PASSWORD_FILE" ] || die "restic password file not readable: $RESTIC_PASSWORD_FILE"
-timeout "$PREFLIGHT_TIMEOUT" restic cat config >/dev/null 2>>"$LOG" \
+timeout -k 5 "$PREFLIGHT_TIMEOUT" restic cat config >/dev/null 2>>"$LOG" \
     || die "restic repository not reachable or wrong password: $RESTIC_REPOSITORY (run restic init once)"
 
 log "=== homelab backup start"
@@ -149,7 +153,7 @@ log "restic backup: $STACK_DIR $EXTRA_PATHS -> $RESTIC_REPOSITORY"
 # (KILL 60s later if TERM is ignored) and the trap brings the stack back.
 # shellcheck disable=SC2086  # EXTRA_PATHS is a space separated list
 if timeout --foreground -k 60 "$BACKUP_TIMEOUT" \
-    restic backup --tag stack "$STACK_DIR" $EXTRA_PATHS >>"$LOG" 2>&1; then
+    nohup restic backup --tag stack "$STACK_DIR" $EXTRA_PATHS >>"$LOG" 2>&1; then
     rc=0
 else
     rc=$?
@@ -168,15 +172,17 @@ log "downtime: $(( $(date +%s) - DOWN_AT ))s"
 # --- retention ---------------------------------------------------------------
 # After the stack is up: prune is slow on SMB and does not need the stack down.
 log "restic forget/prune (daily $KEEP_DAILY, weekly $KEEP_WEEKLY, monthly $KEEP_MONTHLY)"
-restic forget --tag stack --keep-daily "$KEEP_DAILY" --keep-weekly "$KEEP_WEEKLY" \
-    --keep-monthly "$KEEP_MONTHLY" --prune >>"$LOG" 2>&1 \
-    || die "restic forget/prune failed"
+# Timed out too: a hung share after the stack is up would otherwise hold the
+# lock forever and the next alert would be the push monitor a day later.
+timeout -k 60 "$MAINT_TIMEOUT" nohup restic forget --tag stack --keep-daily "$KEEP_DAILY" \
+    --keep-weekly "$KEEP_WEEKLY" --keep-monthly "$KEEP_MONTHLY" --prune >>"$LOG" 2>&1 \
+    || die "restic forget/prune failed or timed out after ${MAINT_TIMEOUT}s"
 
 # --- check -------------------------------------------------------------------
 if [ "$(date +%u)" = "$CHECK_DAY" ]; then
     log "restic check (reading $CHECK_SUBSET of the data)"
-    restic check --read-data-subset="$CHECK_SUBSET" >>"$LOG" 2>&1 \
-        || die "restic check found problems in $RESTIC_REPOSITORY"
+    timeout -k 60 "$MAINT_TIMEOUT" nohup restic check --read-data-subset="$CHECK_SUBSET" >>"$LOG" 2>&1 \
+        || die "restic check found problems in $RESTIC_REPOSITORY or timed out after ${MAINT_TIMEOUT}s"
 fi
 
 # --- heartbeat ---------------------------------------------------------------
