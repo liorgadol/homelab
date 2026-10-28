@@ -85,7 +85,7 @@ start_stack() {
     else
         bad="$(unhealthy_services)"
         log "ERROR: stack did not come back healthy: ${bad:-see log}"
-        notify "⚠️ Stack backup on $(hostname): stack did not come back healthy after the backup. Not healthy: ${bad:-unknown}. Log: $LOG"
+        notify "⚠️ Homelab backup on $(hostname): stack did not come back healthy after the backup. Not healthy: ${bad:-unknown}. Log: $LOG"
     fi
     # A fresh uptime-kuma leaves AutoKuma with a stale session until it restarts.
     "${COMPOSE[@]}" restart autokuma >>"$LOG" 2>&1 || log "WARN: failed to restart autokuma"
@@ -97,7 +97,7 @@ on_exit() {
         start_stack
     fi
     if [ "$rc" -ne 0 ]; then
-        notify "❌ Stack backup failed on $(hostname): ${FAIL_MSG:-exit code $rc}. Log: $LOG"
+        notify "❌ Homelab backup failed on $(hostname): ${FAIL_MSG:-exit code $rc}. Log: $LOG"
     fi
     exit "$rc"
 }
@@ -122,7 +122,7 @@ mountpoint -q "$BACKUP_MOUNT" || die "backup share not mounted: $BACKUP_MOUNT"
 restic cat config >/dev/null 2>>"$LOG" \
     || die "restic repository not reachable or wrong password: $RESTIC_REPOSITORY (run restic init once)"
 
-log "=== stack backup start"
+log "=== homelab backup start"
 
 # --- stop stack --------------------------------------------------------------
 # Set before down: a down that fails halfway still needs the stack brought back.
@@ -171,4 +171,4 @@ else
     log "WARN: KUMA_PUSH_URL not set - skipping heartbeat"
 fi
 
-log "=== stack backup complete"
+log "=== homelab backup complete"

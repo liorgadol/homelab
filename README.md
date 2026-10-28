@@ -468,7 +468,7 @@ Important directories to backup:
 - `./uptime-kuma/data/` - Uptime Kuma database (monitor history, admin account)
 - `./autokuma/data/` - AutoKuma's map of label ids to Uptime Kuma ids; back it up together with `./uptime-kuma/data/`
 
-### Stack backup script (Restic)
+### Homelab backup script (Restic)
 
 `scripts/homelab-backup.sh` backs up the whole stack folder (no excludes) plus `/etc/LinuxExecBot` into a
 Restic repository on the SMB share:
