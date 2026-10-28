@@ -480,7 +480,9 @@ Restic repository on the SMB share:
 5. `restic check --read-data-subset=10%` on Sundays
 6. Pings an Uptime Kuma push monitor
 
-Once the stack is down, every exit path (failure, Ctrl-C, dropped SSH session) brings it back up.
+Once the stack is down, every exit path (failure, Ctrl-C, timeout) brings it back up, and the recovery
+cannot be interrupted. Hangups are ignored: an SSH session over the VPN drops when `down` stops wg-easy,
+and the run carries on. Closing the terminal does not stop a manual run; use Ctrl-C.
 Telegram messages are sent only on failure, or when the stack does not come back healthy (with the
 list of services that are not). Success is silent; the push monitor catches runs that never happen.
 DNS is down while the stack is down (Pi-hole), so mount the share and point `KUMA_PUSH_URL` at IPs, not hostnames.
@@ -514,6 +516,8 @@ Defaults (override with environment variables):
 | `CHECK_DAY` / `CHECK_SUBSET` | `7` (Sunday) / `10%` | When `restic check` runs and how much data it reads |
 | `STOP_TIMEOUT` | `60` | Seconds to wait for a clean shutdown |
 | `HEALTH_TIMEOUT` | `300` | Seconds to wait for the stack to be running and healthy |
+| `BACKUP_TIMEOUT` | `7200` | Seconds before a stuck `restic backup` (e.g. hung share) is killed and the stack restored |
+| `PREFLIGHT_TIMEOUT` | `30` | Seconds for the share and repository checks |
 | `ENV_FILE` | `$STACK_DIR/.env` | Where `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` and `KUMA_PUSH_URL` are read from |
 | `LOG` | `/var/log/homelab-backup.log` | Log file (local, so it works when the share is missing) |
 
