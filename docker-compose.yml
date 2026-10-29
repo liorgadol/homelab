@@ -605,6 +605,8 @@ services:
       # save doesn't touch the dir, so "restart" bumps it.
       - CONFIG_crontab_gadol=/configs/crontabs/gadol
       - RESTART_crontab_gadol=touch /var/spool/cron/crontabs
+      - CONFIG_crontab_root=/configs/crontabs/root
+      - RESTART_crontab_root=touch /var/spool/cron/crontabs
       # Re-read on every lookup; no restart needed.
       - CONFIG_hosts=/configs/hosts/hosts
     volumes:
