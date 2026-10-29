@@ -15,6 +15,9 @@ pinchflat/downloads
 pinchflat/config/
 /wgeasy/config/
 
+# Python bytecode
+__pycache__/
+
 # Logs
 *.log
 */logs/
@@ -22,7 +25,6 @@ pinchflat/config/
 # Cutter build artifacts
 cutter/frontend/node_modules/
 cutter/frontend/dist/
-cutter/**/__pycache__/
 cutter/**/.pytest_cache/
 
 # Emby - keep settings + library definitions, drop metadata/cache/DBs
