@@ -106,6 +106,15 @@ def make_backup(name: str, content: str):
         f.unlink(missing_ok=True)
 
 
+def write_in_place(path: Path, content: str):
+    # Same inode so single-file bind mounts and the file's owner/mode are
+    # preserved. No O_CREAT: fs.protected_regular denies it, even to root, on
+    # another user's file in a sticky dir such as the cron spool.
+    with open(path, "r+", encoding="utf-8") as f:
+        f.truncate(0)
+        f.write(content)
+
+
 def audit(action: str, name: str, detail: str = ""):
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     line = f"{datetime.now().isoformat(timespec='seconds')}\t{AUTH_USER}\t{action}\t{name}\t{detail}\n"
@@ -230,10 +239,7 @@ async def save_file(name: str, body: SaveBody):
             raise HTTPException(422, err)
 
     make_backup(name, current)
-    # Write in place (same inode) so single-file bind mounts and the file's
-    # owner/mode are preserved.
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(body.content)
+    write_in_place(path, body.content)
     audit("save", name, f"{len(current)}->{len(body.content)} bytes")
 
     restart = None
@@ -297,8 +303,7 @@ async def restore_backup(name: str, backup_id: str):
     content = backup_file(name, backup_id).read_text(encoding="utf-8")
     current = read_text(path)
     make_backup(name, current)
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(content)
+    write_in_place(path, content)
     audit("restore", name, backup_id)
     return {"hash": sha(content)}
 
