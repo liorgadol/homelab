@@ -557,11 +557,8 @@ services:
   withoutbg:
     image: withoutbg/withoutbg-openweights-v3-app-cpu:latest
     container_name: withoutbg
-    labels:
-      - "kuma.withoutbg.docker.name=withoutBG"
-      - "kuma.withoutbg.docker.docker_container=withoutbg"
-      - "kuma.withoutbg-web.http.name=withoutBG web"
-      - "kuma.withoutbg-web.http.url=http://192.168.1.200:8086/health"
+    # No AutoKuma labels: started/stopped on demand from Homarr, so a stopped
+    # container is normal and must not alert.
     restart: unless-stopped
     ports:
       - "8086:8080"   # 8080 belongs to Dozzle
