@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Camera Viewer - Split Screen</title>
+    <script>
+        // ?embed=1 -> compact, scrollbar-free layout for dashboard iframes (e.g. Homarr)
+        (function () {
+            var v = new URLSearchParams(location.search).get('embed');
+            if (v !== null && v !== '0' && v !== 'false') {
+                document.documentElement.classList.add('embed');
+            }
+        })();
+    </script>
     <style>
         * {
             margin: 0;
@@ -191,6 +200,93 @@
                 font-size: 14px;
             }
         }
+        /* ---------- Embed mode (?embed=1) ----------
+           Fill the iframe exactly: no title, no buttons, no scrolling.
+           Cameras stack vertically in tall/narrow frames and sit side by
+           side once the frame is wider than 16:9 (the point where side by
+           side gives each 16:9 video more room than stacking). */
+        html.embed,
+        html.embed body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        html.embed body {
+            background: #000;
+            padding: 0;
+            min-height: 0;
+        }
+
+        html.embed .container {
+            height: 100%;
+            max-width: none;
+            padding: 4px;
+            border-radius: 0;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+        }
+
+        html.embed h1,
+        html.embed .controls {
+            display: none;
+        }
+
+        html.embed .cameras-grid {
+            flex: 1;
+            min-height: 0;
+            margin: 0;
+            gap: 4px;
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr 1fr;
+        }
+
+        @media (min-aspect-ratio: 16/9) {
+            html.embed .cameras-grid {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: 1fr;
+            }
+        }
+
+        html.embed .camera-section {
+            position: relative;
+            min-height: 0;
+            min-width: 0;
+        }
+
+        /* Camera name floats over the video instead of taking a row */
+        html.embed .camera-title {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            z-index: 2;
+            margin: 0;
+            padding: 2px 8px;
+            font-size: 0.8em;
+            background: rgba(0, 0, 0, 0.55);
+            border-radius: 6px;
+            pointer-events: none;
+        }
+
+        html.embed .status-dot {
+            width: 8px;
+            height: 8px;
+        }
+
+        html.embed .video-container {
+            aspect-ratio: auto;
+            height: 100%;
+            border-radius: 6px;
+        }
+
+        html.embed .loading {
+            font-size: 14px;
+        }
+
+        html.embed .spinner {
+            width: 28px;
+            height: 28px;
+        }
     </style>
 </head>
 <body>
@@ -236,9 +332,15 @@
 
     <script>
         const cameras = [
-            { id: 1, name: 'camera1', pc: null },
-            { id: 2, name: 'camera2', pc: null }
+            { id: 1, name: 'camera1', pc: null, wanted: false, retryTimer: null, retryDelay: 0 },
+            { id: 2, name: 'camera2', pc: null, wanted: false, retryTimer: null, retryDelay: 0 }
         ];
+
+        // Auto-reconnect: retry after a drop/failure with exponential backoff
+        const RETRY_MIN_MS = 2000;
+        const RETRY_MAX_MS = 30000;
+        // A 'disconnected' WebRTC state can recover by itself; give it this long first
+        const DISCONNECT_GRACE_MS = 5000;
 
         const connectBtn = document.getElementById('connectBtn');
         const disconnectBtn = document.getElementById('disconnectBtn');
@@ -246,25 +348,36 @@
         function updateStatus(cameraId, message, type) {
             const statusDot = document.getElementById(`status${cameraId}`);
             statusDot.className = `status-dot ${type}`;
-            // Set tooltip text based on type
-            let tooltip = '';
-            switch(type) {
-                case 'connected':
-                    tooltip = 'Connected'; break;
-                case 'connecting':
-                    tooltip = 'Connecting...'; break;
-                case 'error':
-                    tooltip = 'Connection error'; break;
-                case 'disconnected':
-                default:
-                    tooltip = 'Disconnected'; break;
+            statusDot.title = message;
+        }
+
+        function clearRetry(camera) {
+            if (camera.retryTimer) {
+                clearTimeout(camera.retryTimer);
+                camera.retryTimer = null;
             }
-            statusDot.title = tooltip;
+        }
+
+        function scheduleReconnect(camera, delay) {
+            if (!camera.wanted || camera.retryTimer) return;
+            const wait = delay ?? camera.retryDelay;
+            console.log(`Camera ${camera.id} reconnecting in ${wait} ms`);
+            camera.retryTimer = setTimeout(() => {
+                camera.retryTimer = null;
+                if (!camera.wanted) return;
+                // Recovered on its own during the wait
+                if (camera.pc && camera.pc.connectionState === 'connected') return;
+                connectCamera(camera);
+            }, wait);
+            camera.retryDelay = Math.min(camera.retryDelay * 2, RETRY_MAX_MS);
         }
 
         async function connectCamera(camera) {
             const video = document.getElementById(`video${camera.id}`);
             const loading = document.getElementById(`loading${camera.id}`);
+            let pc = null;
+
+            clearRetry(camera);
 
             try {
                 loading.style.display = 'block';
@@ -276,17 +389,19 @@
                 }
 
                 // Create new peer connection
-                camera.pc = new RTCPeerConnection({
+                pc = new RTCPeerConnection({
                     iceServers: [{urls: 'stun:stun.l.google.com:19302'}]
                 });
+                camera.pc = pc;
 
                 // Handle incoming tracks
-                camera.pc.ontrack = (event) => {
+                pc.ontrack = (event) => {
+                    if (camera.pc !== pc) return; // stale connection
                     console.log(`Camera ${camera.id} received track:`, event.track.kind);
                     video.srcObject = event.streams[0];
                     loading.style.display = 'none';
                     updateStatus(camera.id, 'Connected', 'connected');
-                    
+
                     // Ensure video plays
                     video.play().catch(e => {
                         console.log(`Camera ${camera.id} autoplay issue:`, e);
@@ -295,43 +410,56 @@
                 };
 
                 // Handle connection state
-                camera.pc.onconnectionstatechange = () => {
-                    console.log(`Camera ${camera.id} state:`, camera.pc.connectionState);
-                    if (camera.pc.connectionState === 'failed' || camera.pc.connectionState === 'disconnected') {
+                pc.onconnectionstatechange = () => {
+                    if (camera.pc !== pc) return; // stale connection
+                    const state = pc.connectionState;
+                    console.log(`Camera ${camera.id} state:`, state);
+                    if (state === 'connected') {
+                        clearRetry(camera);
+                        camera.retryDelay = RETRY_MIN_MS;
+                        updateStatus(camera.id, 'Connected', 'connected');
+                    } else if (state === 'disconnected') {
+                        updateStatus(camera.id, 'Connection lost, waiting to recover...', 'connecting');
+                        scheduleReconnect(camera, DISCONNECT_GRACE_MS);
+                    } else if (state === 'failed') {
                         loading.style.display = 'none';
-                        updateStatus(camera.id, 'Connection lost', 'error');
+                        updateStatus(camera.id, 'Connection failed, retrying...', 'error');
+                        clearRetry(camera);
+                        scheduleReconnect(camera);
                     }
                 };
 
                 // Log ICE candidates
-                camera.pc.onicecandidate = (event) => {
+                pc.onicecandidate = (event) => {
                     if (event.candidate) {
                         console.log(`Camera ${camera.id} ICE candidate:`, event.candidate.candidate);
                     }
                 };
 
                 // Add transceivers for video and audio
-                camera.pc.addTransceiver('video', {direction: 'recvonly'});
-                camera.pc.addTransceiver('audio', {direction: 'recvonly'});
+                pc.addTransceiver('video', {direction: 'recvonly'});
+                pc.addTransceiver('audio', {direction: 'recvonly'});
 
                 // Create and set local offer
-                const offer = await camera.pc.createOffer();
-                await camera.pc.setLocalDescription(offer);
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
 
                 // Wait for ICE gathering to complete
-                if (camera.pc.iceGatheringState !== 'complete') {
+                if (pc.iceGatheringState !== 'complete') {
                     await new Promise(resolve => {
                         const checkState = () => {
-                            if (camera.pc.iceGatheringState === 'complete') {
-                                camera.pc.removeEventListener('icegatheringstatechange', checkState);
+                            if (pc.iceGatheringState === 'complete') {
+                                pc.removeEventListener('icegatheringstatechange', checkState);
                                 resolve();
                             }
                         };
-                        camera.pc.addEventListener('icegatheringstatechange', checkState);
+                        pc.addEventListener('icegatheringstatechange', checkState);
                         // Timeout after 3 seconds
                         setTimeout(resolve, 3000);
                     });
                 }
+
+                if (camera.pc !== pc) return; // replaced or disconnected meanwhile
 
                 // Send offer to go2rtc and get answer
                 const response = await fetch(`/api/webrtc?src=${camera.name}`, {
@@ -339,7 +467,7 @@
                     headers: {
                         'Content-Type': 'application/sdp'
                     },
-                    body: camera.pc.localDescription.sdp
+                    body: pc.localDescription.sdp
                 });
 
                 if (!response.ok) {
@@ -347,7 +475,8 @@
                 }
 
                 const answer = await response.text();
-                await camera.pc.setRemoteDescription({
+                if (camera.pc !== pc) return; // replaced or disconnected meanwhile
+                await pc.setRemoteDescription({
                     type: 'answer',
                     sdp: answer
                 });
@@ -355,16 +484,20 @@
                 console.log(`Camera ${camera.id} connected successfully`);
 
             } catch (error) {
+                if (pc && camera.pc !== pc) return; // stale attempt
                 console.error(`Camera ${camera.id} error:`, error);
                 loading.style.display = 'none';
-                updateStatus(camera.id, `Error: ${error.message}`, 'error');
+                updateStatus(camera.id, `Error: ${error.message}, retrying...`, 'error');
+                scheduleReconnect(camera);
             }
         }
 
         function disconnectCamera(camera) {
             const video = document.getElementById(`video${camera.id}`);
             const loading = document.getElementById(`loading${camera.id}`);
-            
+
+            camera.wanted = false;
+            clearRetry(camera);
             if (camera.pc) {
                 camera.pc.close();
                 camera.pc = null;
@@ -377,8 +510,10 @@
         async function connectAll() {
             connectBtn.disabled = true;
             disconnectBtn.disabled = false;
-            
+
             for (const camera of cameras) {
+                camera.wanted = true;
+                camera.retryDelay = RETRY_MIN_MS;
                 await connectCamera(camera);
             }
         }

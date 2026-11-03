@@ -107,6 +107,7 @@ Camera stream server that re-publishes RTSP cameras as WebRTC/RTSP/HLS.
 Static camera viewer (nginx) that proxies `/api/` to go2rtc.
 - Access at: `http://localhost:8082`
 - Served from: `./splitcam/index.html`, nginx config `./splitcam/nginx.conf`
+- Dashboard embed: add `?embed=1` (e.g. `http://cams.gadol.lan/?embed=1`) for a compact layout that fills the iframe with no scrollbar. Cameras stack in tall frames and sit side by side in frames wider than 16:9.
 
 ### ✂️ Cutter
 **Port:** 8083  
