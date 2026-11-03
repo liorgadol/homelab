@@ -263,11 +263,14 @@
             min-width: 0;
         }
 
-        /* Camera name floats over the video instead of taking a row */
+        /* Camera name floats top-center over the video (clear of the
+           dashboard's widget title in the top-left corner) */
         html.embed .camera-title {
             position: absolute;
             top: 6px;
-            left: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
             z-index: 2;
             margin: 0;
             padding: 2px 8px;
