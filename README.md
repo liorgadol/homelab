@@ -106,8 +106,11 @@ Camera stream server that re-publishes RTSP cameras as WebRTC/RTSP/HLS.
 **Port:** 8082  
 Static camera viewer (nginx) that proxies `/api/` to go2rtc.
 - Access at: `http://localhost:8082`
-- Served from: `./splitcam/index.html`, nginx config `./splitcam/nginx.conf`
-- Dashboard embed: add `?embed=1` (e.g. `http://cams.gadol.lan/?embed=1`) for a compact layout that fills the iframe with no scrollbar. Cameras stack in tall frames and sit side by side in frames wider than 16:9.
+- Served from: `./splitcam/web/` (folder mount, so `git pull` changes show up without a restart), nginx config `./splitcam/nginx.conf` (single-file mount: restart `splitcam_camera-web` after changing it)
+- Two independent pages with separate styles, sharing the camera logic in `web/cameras.js`:
+  - `web/index.html`: the web view at `/`
+  - `web/embed.html`: the dashboard widget view at `/?embed=1` (e.g. `http://cams.gadol.lan/?embed=1`). It fills the iframe with no scrollbar and a transparent background. Cameras stack in tall frames and sit side by side in frames wider than 16:9. nginx picks the page from the `embed` query parameter.
+- Camera names or streams are set in both pages' markup and in the `cameras` list in `web/cameras.js`
 
 ### ✂️ Cutter
 **Port:** 8083  
@@ -309,8 +312,8 @@ The stack will create the following directories for persistent data:
 │   └── homelab-backup.sh
 ├── splitcam/
 │   ├── config/go2rtc.yaml
-│   ├── index.html
-│   └── nginx.conf
+│   ├── nginx.conf
+│   └── web/                # index.html (web), embed.html (widget), cameras.js (shared)
 ├── stirlingtools/
 │   ├── configs/
 │   └── customFiles/

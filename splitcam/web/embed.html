@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cameras</title>
+    <!--
+        Widget view for dashboard iframes (Homarr). Served at /?embed=1 by
+        nginx; the web view is index.html. Camera logic is shared in
+        cameras.js, so styles here are independent of index.html.
+
+        Fills the iframe exactly with no scrolling. Cameras stack in tall or
+        narrow frames and sit side by side once the frame is wider than 16:9
+        (the point where side by side gives each 16:9 video more room).
+    -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Transparent page: the dashboard shows through the gap between
+           cameras. color-scheme must match the (dark) dashboard, otherwise
+           browsers paint an opaque backdrop behind the iframe. */
+        html {
+            color-scheme: dark;
+            background: transparent;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: transparent;
+        }
+
+        .cameras-grid {
+            height: 100%;
+            display: grid;
+            gap: 8px;
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr 1fr;
+        }
+
+        @media (min-aspect-ratio: 16/9) {
+            .cameras-grid {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: 1fr;
+            }
+        }
+
+        .camera-section {
+            position: relative;
+            min-height: 0;
+            min-width: 0;
+        }
+
+        /* Camera name floats top-center over the video (clear of the
+           dashboard's widget title in the top-left corner) */
+        .camera-title {
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 2px 8px;
+            color: #eee;
+            font-size: 0.8em;
+            font-weight: 600;
+            white-space: nowrap;
+            background: rgba(0, 0, 0, 0.55);
+            border-radius: 6px;
+            pointer-events: none;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #6c757d;
+            transition: background 0.3s;
+        }
+
+        .status-dot.connecting {
+            background: #ffc107;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .status-dot.connected {
+            background: #28a745;
+        }
+
+        .status-dot.error {
+            background: #dc3545;
+        }
+
+        .status-dot.disconnected {
+            background: #6c757d;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .video-container {
+            position: relative;
+            height: 100%;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: contain;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 28px;
+            height: 28px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="cameras-grid">
+        <div class="camera-section">
+            <div class="camera-title">
+                <span class="status-dot disconnected" id="status1" title="Disconnected"></span>
+                Living Room
+            </div>
+            <div class="video-container">
+                <video id="video1" controls autoplay muted playsinline></video>
+                <div class="loading" id="loading1">
+                    <div class="spinner"></div>
+                    <div>Connecting...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="camera-section">
+            <div class="camera-title">
+                <span class="status-dot disconnected" id="status2" title="Disconnected"></span>
+                Upstairs
+            </div>
+            <div class="video-container">
+                <video id="video2" controls autoplay muted playsinline></video>
+                <div class="loading" id="loading2">
+                    <div class="spinner"></div>
+                    <div>Connecting...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="cameras.js"></script>
+</body>
+</html>
