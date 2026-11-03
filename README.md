@@ -470,7 +470,8 @@ Important directories to backup:
 
 ### Homelab backup script (Restic)
 
-`scripts/homelab-backup.sh` backs up the whole stack folder (no excludes) plus `/etc/LinuxExecBot` into a
+`scripts/homelab-backup.sh` backs up the whole stack folder (no excludes) plus the host files in `EXTRA_PATHS`
+(`/etc/LinuxExecBot`, `/etc/fstab` and `/etc/systemd/system/homelab-up.service` by default) into a
 Restic repository on the SMB share:
 
 1. `docker compose down` (every service, so the SQLite databases are consistent)
@@ -508,7 +509,7 @@ Defaults (override with environment variables):
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `STACK_DIR` | `/opt/docker/homelab` | Compose project folder to back up |
-| `EXTRA_PATHS` | `/etc/LinuxExecBot /etc/fstab /etc/systemd/system/homelab-up.service` | Space separated host paths backed up alongside it |
+| `EXTRA_PATHS` | `/etc/LinuxExecBot /etc/fstab /etc/systemd/system/homelab-up.service` | Space separated host paths backed up alongside it. A missing path fails the run before the stack is stopped; paths with spaces are not supported |
 | `BACKUP_MOUNT` | `/mnt/homelab_backup` | SMB mountpoint; the run fails if it is not mounted |
 | `RESTIC_REPOSITORY` | `$BACKUP_MOUNT/restic` | Restic repository |
 | `RESTIC_PASSWORD_FILE` | `/root/.restic-pass` | Repository password. Lose it and the backups are unreadable |
@@ -521,6 +522,12 @@ Defaults (override with environment variables):
 | `MAINT_TIMEOUT` | `10800` | Seconds before a stuck `restic forget --prune` or `restic check` is killed |
 | `ENV_FILE` | `$STACK_DIR/.env` | Where `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` and `KUMA_PUSH_URL` are read from |
 | `LOG` | `/var/log/homelab-backup.log` | Log file (local, so it works when the share is missing) |
+
+Setting `EXTRA_PATHS` replaces the default list, so repeat the defaults when adding a path:
+
+```cron
+0 4 * * * EXTRA_PATHS="/etc/LinuxExecBot /etc/fstab /etc/systemd/system/homelab-up.service /etc/samba" /opt/docker/homelab/scripts/homelab-backup.sh
+```
 
 Restore examples:
 
