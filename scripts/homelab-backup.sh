@@ -14,6 +14,7 @@ set -euo pipefail
 
 STACK_DIR="${STACK_DIR:-/opt/docker/homelab}"
 EXTRA_PATHS="${EXTRA_PATHS:-/etc/LinuxExecBot /etc/fstab /etc/systemd/system/homelab-up.service}"     # space separated, backed up alongside STACK_DIR
+ON_DEMAND_SERVICES="${ON_DEMAND_SERVICES:-withoutbg}"  # space separated; brought back after the backup only if they were running before it
 BACKUP_MOUNT="${BACKUP_MOUNT:-/mnt/homelab_backup}"
 export RESTIC_REPOSITORY="${RESTIC_REPOSITORY:-${BACKUP_MOUNT}/restic}"
 export RESTIC_PASSWORD_FILE="${RESTIC_PASSWORD_FILE:-/root/.restic-pass}"
@@ -74,6 +75,7 @@ notify() {
 # Ctrl-C, timeout - brings it back up before the script ends.
 STACK_DOWN=0
 FAIL_MSG=""
+UP_SERVICES=()   # services start_stack brings up; empty means all of them
 
 # Services that are not running, or have a healthcheck that is not healthy,
 # with their state, e.g. "emby(running/starting),pihole(exited)".
@@ -86,7 +88,7 @@ unhealthy_services() {
 start_stack() {
     STACK_DOWN=0
     log "starting stack (waiting up to ${HEALTH_TIMEOUT}s for healthy)"
-    if "${COMPOSE[@]}" up -d --wait --wait-timeout "$HEALTH_TIMEOUT" >>"$LOG" 2>&1; then
+    if "${COMPOSE[@]}" up -d --wait --wait-timeout "$HEALTH_TIMEOUT" "${UP_SERVICES[@]}" >>"$LOG" 2>&1; then
         log "stack is up and healthy"
     else
         bad="$(unhealthy_services)"
@@ -139,6 +141,19 @@ timeout -k 5 "$PREFLIGHT_TIMEOUT" restic cat config >/dev/null 2>>"$LOG" \
     || die "restic repository not reachable or wrong password: $RESTIC_REPOSITORY (run restic init once)"
 
 log "=== homelab backup start"
+
+# --- services to bring back --------------------------------------------------
+# down removes every container, so a plain up would also start on-demand
+# services that were stopped. List the services explicitly and leave those out.
+running="$("${COMPOSE[@]}" ps --services --status running 2>>"$LOG")" || die "docker compose ps failed"
+all_services="$("${COMPOSE[@]}" config --services 2>>"$LOG")" || die "docker compose config failed"
+for s in $all_services; do
+    if [[ " $ON_DEMAND_SERVICES " == *" $s "* ]] && ! grep -qx "$s" <<<"$running"; then
+        log "on-demand service $s is not running - it stays down after the backup"
+        continue
+    fi
+    UP_SERVICES+=("$s")
+done
 
 # --- stop stack --------------------------------------------------------------
 # Set before down: a down that fails halfway still needs the stack brought back.

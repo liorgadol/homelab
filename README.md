@@ -514,6 +514,7 @@ Defaults (override with environment variables):
 |----------|---------|---------|
 | `STACK_DIR` | `/opt/docker/homelab` | Compose project folder to back up |
 | `EXTRA_PATHS` | `/etc/LinuxExecBot /etc/fstab /etc/systemd/system/homelab-up.service` | Space separated host paths backed up alongside it. A missing path fails the run before the stack is stopped; paths with spaces are not supported |
+| `ON_DEMAND_SERVICES` | `withoutbg` | Space separated services started after the backup only if they were running before it |
 | `BACKUP_MOUNT` | `/mnt/homelab_backup` | SMB mountpoint; the run fails if it is not mounted |
 | `RESTIC_REPOSITORY` | `$BACKUP_MOUNT/restic` | Restic repository |
 | `RESTIC_PASSWORD_FILE` | `/root/.restic-pass` | Repository password. Lose it and the backups are unreadable |
