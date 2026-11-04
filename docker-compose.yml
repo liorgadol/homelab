@@ -65,7 +65,8 @@ services:
     dns:
       - 192.168.1.200
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:7575/api/health/live || exit 1"]
+      # Image ships neither wget nor curl; use node's fetch
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:7575/api/health/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3
