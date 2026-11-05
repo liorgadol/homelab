@@ -8,8 +8,9 @@
         Widget view for dashboard iframes (Homarr). Served at /?embed=1&c=<name>
         by nginx; the web view is index.html. Logic is shared in control.js.
 
-        One round button with the state under it. Everything is sized in vmin,
-        so it fills any iframe, from a 1x1 tile up, with no scrolling.
+        One round button with the state under it, sized to fit any iframe
+        (from a 1x1 tile up) with no scrolling. --top keeps the top of the
+        frame clear for the Homarr widget label.
     -->
     <style>
         * {
@@ -22,6 +23,9 @@
            match the (dark) dashboard, otherwise browsers paint an opaque
            backdrop behind the iframe. */
         html {
+            --top: 30px;   /* room for the Homarr widget label */
+            /* Square that fits the area below --top; sizes derive from it */
+            --unit: min(1vw, calc((100vh - var(--top)) / 100));
             color-scheme: dark;
             background: transparent;
         }
@@ -37,7 +41,8 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 4vmin;
+            gap: calc(4 * var(--unit));
+            padding-top: var(--top);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
             background: transparent;
             -webkit-font-smoothing: antialiased;
@@ -45,10 +50,10 @@
 
         #toggle {
             --c: #8b8fa3;
-            width: 62vmin;
-            height: 62vmin;
+            width: calc(62 * var(--unit));
+            height: calc(62 * var(--unit));
             border-radius: 50%;
-            border: 1.5vmin solid var(--c);
+            border: calc(1.5 * var(--unit)) solid var(--c);
             background: color-mix(in srgb, var(--c) 16%, transparent);
             color: var(--c);
             display: grid;
@@ -92,7 +97,7 @@
 
         #state {
             color: #c9ccd8;
-            font-size: max(10px, 11vmin);
+            font-size: max(10px, calc(11 * var(--unit)));
             font-weight: 600;
             line-height: 1;
             white-space: nowrap;
