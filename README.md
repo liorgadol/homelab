@@ -127,6 +127,16 @@ Background removal web app with a built-in API ([withoutBG Open Weights v3](http
 - API: `POST /api/v1/remove-background`; health at `/health`
 - Stateless, no volumes: the ~1.5GB model is baked into the image, so the first pull is large
 
+### 🎛️ homelabctl
+**Port:** 8087  
+Start/stop button pages for allowlisted containers (nginx, no app code).
+- Web view: `http://homelabctl.gadol.lan/?c=withoutbg`
+- Widget view: `http://homelabctl.gadol.lan/?c=withoutbg&embed=1` (Homarr iframe). One round button that fills the iframe with a transparent background: green ▶ when stopped, red ■ when running. nginx picks the page from the `embed` query parameter, like splitcam.
+- Served from: `./homelabctl/web/` (`index.html` web, `embed.html` widget, `control.js` shared; folder mount, so `git pull` changes show up without a restart)
+- nginx proxies only `GET /docker/<name>/state`, `POST /docker/<name>/start` and `POST /docker/<name>/stop` to the Docker socket, and only for names in the `$ctr_allowed` map in `./homelabctl/nginx.conf`. Everything else under `/docker/` is 403.
+- To allow another container: add it to `$ctr_allowed`, then `docker compose restart homelabctl` (single-file mount)
+- `nginx.conf` replaces the image's main config because workers run as root to open the socket
+
 ### 🛠️ Config Manager
 **Port:** 8085  
 Web editor (Monaco) for config files on the host. Built from source in `./configmng`.
@@ -301,6 +311,9 @@ The stack will create the following directories for persistent data:
 │   └── database/
 ├── homarr/
 │   └── appdata/
+├── homelabctl/
+│   ├── nginx.conf          # Docker socket allowlist
+│   └── web/                # index.html (web), embed.html (widget), control.js (shared)
 ├── pihole/
 │   ├── etc-pihole/
 │   └── etc-dnsmasq.d/
@@ -384,6 +397,7 @@ docker compose logs -f dozzle
 | Splitcam web | http://cams.gadol.lan | http://localhost:8082 | Camera viewer |
 | Cutter | http://cutter.gadol.lan | http://localhost:8083 | Background removal / bleed |
 | withoutBG | http://withoutbg.gadol.lan | http://localhost:8086 | Background removal (open weights v3) |
+| homelabctl | http://homelabctl.gadol.lan | http://localhost:8087 | Start/stop buttons for containers |
 | Config Manager | http://config.gadol.lan | http://localhost:8085 | Host config file editor |
 | Emby | http://emby.gadol.lan | http://localhost:8096 | Media server |
 | Glances | http://glances.gadol.lan | http://localhost:61208 | System monitoring |
@@ -642,7 +656,7 @@ Check the RTSP URL works directly (`ffprobe rtsp://user:pass@ip:554/stream1`), a
 - Change all default passwords immediately
 - Stirling PDF has security disabled - enable if exposing to internet
 - Consider placing services behind a VPN if accessing remotely (wg-easy is included for this)
-- Several services (Dozzle, Homarr, Dockhand, caddy/ui, WUD, Glances, Beszel agent, Uptime Kuma, AutoKuma) mount `/var/run/docker.sock` - anyone with access to those containers has effective root on the host
+- Several services (Dozzle, Homarr, Dockhand, caddy/ui, WUD, Glances, Beszel agent, Uptime Kuma, AutoKuma, homelabctl) mount `/var/run/docker.sock` - anyone with access to those containers has effective root on the host
 - go2rtc's API is configured with `origin: "*"` and no authentication - do not expose port 1984 to the internet
 - The Telegram bot token is interpolated into an AutoKuma label, so it shows in `docker inspect autokuma` (it is already visible in `docker inspect wud` as an environment variable)
 - Camera and Windows Server share credentials live in `.env` and are interpolated into stream URLs and mount options - keep `.env` out of version control (it is already in `.gitignore`)

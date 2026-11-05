@@ -136,6 +136,11 @@ http://withoutbg.gadol.lan {
 	reverse_proxy 192.168.1.200:8086
 }
 
+http://homelabctl.gadol.lan {
+	import access_log
+	reverse_proxy 192.168.1.200:8087
+}
+
 http://config.gadol.lan {
 	import access_log
 	reverse_proxy 192.168.1.200:8085

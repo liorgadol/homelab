@@ -568,6 +568,36 @@ services:
     environment:
       - TZ=${TZ}
 
+  # homelabctl - Start/stop button pages for allowlisted containers
+  # (/?c=<name>, widget view /?c=<name>&embed=1). nginx proxies only the
+  # state/start/stop calls to the Docker socket; allowlist in homelabctl/nginx.conf.
+  homelabctl:
+    image: nginx:alpine
+    container_name: homelabctl
+    labels:
+      - "kuma.homelabctl.docker.name=homelabctl"
+      - "kuma.homelabctl.docker.docker_container=homelabctl"
+      - "kuma.homelabctl-web.http.name=homelabctl web"
+      - "kuma.homelabctl-web.http.url=http://192.168.1.200:8087/"
+    restart: unless-stopped
+    ports:
+      - "8087:80"
+    volumes:
+      # Folder mount (not single files) so `git pull` changes show up
+      # without restarting the container
+      - ./homelabctl/web:/usr/share/nginx/html:ro
+      # Main config (not conf.d): workers must run as root to open the socket
+      - ./homelabctl/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=${TZ}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider --quiet http://127.0.0.1/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
   # Config Manager - Web editor for host config files. Built from source in
   # ./configmng. Only files declared as CONFIG_<name> are visible;
   # RESTART_<name> runs on the host after "Save & restart".

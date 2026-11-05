@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>homelabctl</title>
+    <!--
+        Widget view for dashboard iframes (Homarr). Served at /?embed=1&c=<name>
+        by nginx; the web view is index.html. Logic is shared in control.js.
+
+        One round button with the state under it. Everything is sized in vmin,
+        so it fills any iframe, from a 1x1 tile up, with no scrolling.
+    -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Transparent page: the dashboard shows through. color-scheme must
+           match the (dark) dashboard, otherwise browsers paint an opaque
+           backdrop behind the iframe. */
+        html {
+            color-scheme: dark;
+            background: transparent;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4vmin;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: transparent;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        #toggle {
+            --c: #8b8fa3;
+            width: 62vmin;
+            height: 62vmin;
+            border-radius: 50%;
+            border: 1.5vmin solid var(--c);
+            background: color-mix(in srgb, var(--c) 16%, transparent);
+            color: var(--c);
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            transition: transform 0.12s, background 0.2s, border-color 0.2s, color 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #toggle:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--c) 28%, transparent);
+        }
+
+        #toggle:active:not(:disabled) {
+            transform: scale(0.94);
+        }
+
+        #toggle:disabled {
+            cursor: default;
+        }
+
+        #toggle svg {
+            width: 50%;
+            height: 50%;
+            fill: currentColor;
+        }
+
+        /* Stopped: green play (tap starts). Running: red stop (tap stops). */
+        #toggle[data-state="stopped"] { --c: #2fd47a; }
+        #toggle[data-state="running"] { --c: #ff3b4f; }
+        #toggle[data-state="busy"]    { --c: #ffb020; animation: pulse 1.2s ease-in-out infinite; }
+        #toggle[data-state="other"]   { --c: #ffb020; }
+        #toggle[data-state="error"]   { --c: #8b8fa3; }
+
+        .icon { display: none; }
+        #toggle[data-state="stopped"] .icon-play,
+        #toggle[data-state="running"] .icon-stop,
+        #toggle[data-state="busy"] .icon-busy,
+        #toggle[data-state="other"] .icon-busy,
+        #toggle[data-state="error"] .icon-error { display: block; }
+
+        #state {
+            color: #c9ccd8;
+            font-size: max(10px, 11vmin);
+            font-weight: 600;
+            line-height: 1;
+            white-space: nowrap;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <button id="toggle" data-state="busy" disabled>
+        <svg class="icon icon-play" viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>
+        <svg class="icon icon-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+        <svg class="icon icon-busy" viewBox="0 0 24 24"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
+        <svg class="icon icon-error" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm-1 5h2v6h-2zm0 8h2v2h-2z"/></svg>
+    </button>
+    <div id="state">…</div>
+
+    <script src="control.js"></script>
+</body>
+</html>

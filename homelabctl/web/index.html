@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a0b10">
+    <title>homelabctl</title>
+    <!--
+        Web view (served at /?c=<name>). The Homarr widget view is embed.html;
+        logic is shared in control.js. Element ids (toggle, state, name,
+        detail) are what control.js looks for.
+    -->
+    <style>
+        :root {
+            --bg: #0a0b10;
+            --surface: rgba(255, 255, 255, 0.04);
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #f2f3f7;
+            --muted: #8b8fa3;
+            --ok: #2fd47a;
+            --live: #ff3b4f;
+            --warn: #ffb020;
+            --radius: 18px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            color-scheme: dark;
+        }
+
+        body {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px 16px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Inter, Roboto, system-ui, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(900px 500px at 10% -10%, rgba(124, 108, 255, 0.18), transparent 60%),
+                radial-gradient(700px 400px at 100% 0%, rgba(118, 75, 162, 0.16), transparent 60%),
+                var(--bg);
+            background-attachment: fixed;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 360px;
+            padding: 32px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        .eyebrow {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        #name {
+            font-size: 26px;
+            font-weight: 700;
+            margin-top: -12px;
+            word-break: break-all;
+            text-align: center;
+        }
+
+        #toggle {
+            --c: var(--muted);
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            border: 4px solid var(--c);
+            background: color-mix(in srgb, var(--c) 14%, transparent);
+            color: var(--c);
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            transition: transform 0.12s, background 0.2s, border-color 0.2s, color 0.2s;
+        }
+
+        #toggle:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--c) 26%, transparent);
+        }
+
+        #toggle:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+
+        #toggle:disabled {
+            cursor: default;
+        }
+
+        #toggle svg {
+            width: 50%;
+            height: 50%;
+            fill: currentColor;
+        }
+
+        #toggle[data-state="stopped"] { --c: var(--ok); }
+        #toggle[data-state="running"] { --c: var(--live); }
+        #toggle[data-state="busy"]    { --c: var(--warn); animation: pulse 1.2s ease-in-out infinite; }
+        #toggle[data-state="other"]   { --c: var(--warn); }
+        #toggle[data-state="error"]   { --c: var(--muted); }
+
+        .icon { display: none; }
+        #toggle[data-state="stopped"] .icon-play,
+        #toggle[data-state="running"] .icon-stop,
+        #toggle[data-state="busy"] .icon-busy,
+        #toggle[data-state="other"] .icon-busy,
+        #toggle[data-state="error"] .icon-error { display: block; }
+
+        #state {
+            padding: 4px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        #detail {
+            min-height: 1.2em;
+            color: var(--muted);
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <div class="eyebrow">homelabctl</div>
+        <div id="name"></div>
+        <button id="toggle" data-state="busy" disabled>
+            <svg class="icon icon-play" viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>
+            <svg class="icon icon-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+            <svg class="icon icon-busy" viewBox="0 0 24 24"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
+            <svg class="icon icon-error" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm-1 5h2v6h-2zm0 8h2v2h-2z"/></svg>
+        </button>
+        <div id="state">…</div>
+        <div id="detail"></div>
+        <div class="hint">Widget view: add <code>&amp;embed=1</code></div>
+    </main>
+
+    <script src="control.js"></script>
+</body>
+</html>
