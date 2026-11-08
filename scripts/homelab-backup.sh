@@ -76,17 +76,28 @@ notify() {
 STACK_DOWN=0
 FAIL_MSG=""
 UP_SERVICES=()   # services start_stack brings up; empty means all of them
+DOWN_SERVICES=() # stopped on-demand services: recreated but not started
 
 # Services that are not running, or have a healthcheck that is not healthy,
-# with their state, e.g. "emby(running/starting),pihole(exited)".
+# with their state, e.g. "emby(running/starting),pihole(exited)". Stopped
+# on-demand services (DOWN_SERVICES) are expected to be in "created" state.
 unhealthy_services() {
     "${COMPOSE[@]}" ps -a --format '{{.Service}} {{.State}} {{.Health}}' 2>/dev/null \
-        | awk '$2 != "running" || ($3 != "" && $3 != "healthy") {print $1 "(" $2 ($3 != "" ? "/" $3 : "") ")"}' \
+        | awk -v down=" ${DOWN_SERVICES[*]} " 'index(down, " " $1 " ") && $2 == "created" {next}
+            $2 != "running" || ($3 != "" && $3 != "healthy") {print $1 "(" $2 ($3 != "" ? "/" $3 : "") ")"}' \
         | paste -sd, - || true
 }
 
 start_stack() {
     STACK_DOWN=0
+    # down removed the stopped on-demand services' containers too. Create them
+    # again (not started) so they show as stopped and can be started from
+    # Homarr/homelabctl, which act only on existing containers.
+    if [ "${#DOWN_SERVICES[@]}" -gt 0 ]; then
+        log "creating stopped on-demand services: ${DOWN_SERVICES[*]}"
+        "${COMPOSE[@]}" create "${DOWN_SERVICES[@]}" >>"$LOG" 2>&1 \
+            || log "WARN: failed to create ${DOWN_SERVICES[*]}"
+    fi
     log "starting stack (waiting up to ${HEALTH_TIMEOUT}s for healthy)"
     if "${COMPOSE[@]}" up -d --wait --wait-timeout "$HEALTH_TIMEOUT" "${UP_SERVICES[@]}" >>"$LOG" 2>&1; then
         log "stack is up and healthy"
@@ -149,7 +160,8 @@ running="$("${COMPOSE[@]}" ps --services --status running 2>>"$LOG")" || die "do
 all_services="$("${COMPOSE[@]}" config --services 2>>"$LOG")" || die "docker compose config failed"
 for s in $all_services; do
     if [[ " $ON_DEMAND_SERVICES " == *" $s "* ]] && ! grep -qx "$s" <<<"$running"; then
-        log "on-demand service $s is not running - it stays down after the backup"
+        log "on-demand service $s is not running - it stays stopped after the backup"
+        DOWN_SERVICES+=("$s")
         continue
     fi
     UP_SERVICES+=("$s")
