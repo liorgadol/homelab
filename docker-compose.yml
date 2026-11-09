@@ -212,6 +212,7 @@ services:
   pinchflat:
     image: ghcr.io/kieraneglin/pinchflat:latest
     container_name: pinchflat
+    init: true
     labels:
       - "kuma.pinchflat.docker.name=Pinchflat"
       - "kuma.pinchflat.docker.docker_container=pinchflat"
