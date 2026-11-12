@@ -81,3 +81,16 @@
   cursor: pointer;
 }
 .queue-add:hover { border-color: #3b82f6; color: #3b82f6; }
+
+.queue-hq {
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  padding: 0 4px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 14px;
+  color: #fff;
+  background: #7c3aed;
+}

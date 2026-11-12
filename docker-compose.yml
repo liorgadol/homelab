@@ -511,6 +511,7 @@ services:
       dockerfile: Dockerfile.backend
     container_name: cutter_backend
     restart: unless-stopped
+    mem_limit: 9g
     labels:
       - "wud.watch=false"
       - "kuma.cutter-backend.docker.name=Cutter backend"

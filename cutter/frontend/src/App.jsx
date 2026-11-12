@@ -60,6 +60,12 @@ export default function App() {
     rerun(selected.id);
   }, [selected, rerun]);
 
+  const handleRerunHigh = useCallback(() => {
+    if (!selected) return;
+    if (selected.editedBlob && !window.confirm('Discard edits and re-run AI?')) return;
+    rerun(selected.id, 'high');
+  }, [selected, rerun]);
+
   const handleClearAll = useCallback(() => {
     if (!window.confirm('Remove all images?')) return;
     items.forEach((it) => remove(it.id));
@@ -144,7 +150,7 @@ export default function App() {
         {selected && (selected.status === 'waiting' || selected.status === 'processing') && (
           <div className="processing-page" data-testid="processing-spinner" role="status" aria-live="polite">
             <div className="spinner" aria-hidden="true" />
-            <p>Removing background…</p>
+            <p>{selected.quality === 'high' ? 'High quality — about 15 s…' : 'Removing background…'}</p>
           </div>
         )}
 
@@ -165,6 +171,7 @@ export default function App() {
               onBleedChange={(b) => setBleed(selected.id, b)}
               onEdited={(blob) => setEdited(selected.id, blob)}
               onRerun={handleRerun}
+              onRerunHigh={selected.quality !== 'high' ? handleRerunHigh : undefined}
               onApplyBleedToAll={items.length > 1 ? applyBleedToAll : undefined}
             />
           </div>

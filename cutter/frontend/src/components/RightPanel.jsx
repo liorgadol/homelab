@@ -9,7 +9,7 @@ export default function RightPanel({
   brushOpacity, onBrushOpacityChange,
   viewMode, onViewModeChange,
   filename, dimensions,
-  onDownload, onRerun, onApplyBleedToAll,
+  onDownload, onRerun, onRerunHigh, onApplyBleedToAll,
   bleedEnabled = false, onBleedEnabledChange,
   bleedOffsetMm = 3.0, onBleedOffsetMmChange,
   bleedLoading = false, bleedError = null,
@@ -132,6 +132,9 @@ export default function RightPanel({
 
       <div className="panel-actions">
         <button className="rerun-btn" onClick={onRerun}>↺ Re-run AI</button>
+        {onRerunHigh && (
+          <button className="rerun-btn" onClick={onRerunHigh}>✨ Re-run in high quality</button>
+        )}
         <button className="download-btn" onClick={onDownload}>⬇ Download PNG</button>
       </div>
     </div>

@@ -11,10 +11,10 @@ async function request(url, init) {
   }
 }
 
-export async function removeBg(file, signal) {
+export async function removeBg(file, signal, quality = 'standard') {
   const form = new FormData();
   form.append('file', file);
-  const res = await request(`${API}/remove-bg`, { method: 'POST', body: form, signal });
+  const res = await request(`${API}/remove-bg?quality=${encodeURIComponent(quality)}`, { method: 'POST', body: form, signal });
   if (!res.ok) {
     if (res.status >= 500) throw new Error('Server error — try again');
     throw new Error(`Processing failed (${res.status})`);

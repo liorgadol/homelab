@@ -14,7 +14,7 @@ function formatBleedSuffix(mm) {
 }
 
 export default function Editor({
-  sourceBlob, originalFile, bleed, onBleedChange, onEdited, onRerun, onApplyBleedToAll,
+  sourceBlob, originalFile, bleed, onBleedChange, onEdited, onRerun, onRerunHigh, onApplyBleedToAll,
 }) {
   // Captured once: Editor is keyed by item id, and our own onEdited must not reload the canvas.
   const [initialSource] = useState(() => sourceBlob);
@@ -303,6 +303,7 @@ export default function Editor({
         dimensions={dimensions}
         onDownload={handleDownload}
         onRerun={onRerun}
+        onRerunHigh={onRerunHigh}
         onApplyBleedToAll={onApplyBleedToAll ? () => onApplyBleedToAll({ enabled: bleedEnabled, offsetMm: bleedOffsetMm }) : undefined}
         bleedEnabled={bleedEnabled}
         onBleedEnabledChange={setBleedEnabled}

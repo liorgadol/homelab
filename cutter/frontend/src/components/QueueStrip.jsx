@@ -39,6 +39,9 @@ function QueueItem({ item, selected, onSelect, onRemove, onRetry }) {
       <span className={`queue-badge ${item.status}`} aria-label={label} role="img">
         {STATUS_GLYPH[item.status]}
       </span>
+      {item.quality === 'high' && (
+        <span className="queue-hq" aria-label="high quality" role="img">HQ</span>
+      )}
       <button
         type="button"
         className="queue-remove"

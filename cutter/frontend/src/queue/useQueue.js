@@ -39,7 +39,7 @@ export function useQueue({ removeBg }) {
     );
     const isCurrent = () => controllers.current.get(next.id)?.token === token;
     Promise.resolve()
-      .then(() => removeBg(next.file, controller.signal))
+      .then(() => removeBg(next.file, controller.signal, next.quality))
       .then(
         (blob) => {
           if (!isCurrent()) return;
@@ -93,6 +93,7 @@ export function useQueue({ removeBg }) {
         id: newId(),
         file,
         status: 'waiting',
+        quality: 'standard',
         resultBlob: null,
         editedBlob: null,
         bleed: { ...lastBleed.current },
@@ -128,13 +129,16 @@ export function useQueue({ removeBg }) {
     setItems(rest);
   }, []);
 
-  const rerun = useCallback((id) => {
+  const rerun = useCallback((id, quality) => {
     const entry = controllers.current.get(id);
     if (entry) {
       entry.controller.abort();
       controllers.current.delete(id); // invalidates in-flight token
     }
-    update(id, { status: 'waiting', resultBlob: null, editedBlob: null, error: null });
+    update(id, {
+      ...(quality ? { quality } : {}),
+      status: 'waiting', resultBlob: null, editedBlob: null, error: null,
+    });
   }, [update]);
 
   const retry = useCallback((id) => {
