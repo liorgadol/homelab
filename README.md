@@ -117,7 +117,7 @@ Static camera viewer (nginx) that proxies `/api/` to go2rtc.
 Image background removal (rembg) and print bleed tool. Built from source in `./cutter`.
 - Access at: `http://localhost:8083`
 - `cutter-frontend` (nginx + React) proxies `/remove-bg`, `/add-bleed`, `/health` to `cutter-backend` (FastAPI, internal :8000)
-- First build downloads the `u2net` model (~170MB) and bakes it into the image (~3-5 min)
+- First build downloads the `isnet-general-use` model (~180MB) and bakes it into the image (~3-5 min)
 - Excluded from WUD entirely via `wud.watch=false` (locally built images have no registry to check)
 
 ### 🪄 withoutBG

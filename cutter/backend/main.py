@@ -9,6 +9,8 @@ from bleed import add_bleed, BleedError, _mm_to_px
 
 logger = logging.getLogger("cutter")
 
+MODEL_NAME = "isnet-general-use"
+
 _session = None
 _session_lock = threading.Lock()
 
@@ -18,7 +20,7 @@ def _get_session():
     if _session is None:
         with _session_lock:
             if _session is None:
-                _session = new_session("u2net")
+                _session = new_session(MODEL_NAME)
     return _session
 
 

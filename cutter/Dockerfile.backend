@@ -1,4 +1,4 @@
-# Backend image. Bakes the rembg u2net model into the image so first request is fast and the container works fully offline.
+# Backend image. Bakes the rembg isnet-general-use model into the image so first request is fast and the container works fully offline.
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -18,8 +18,8 @@ WORKDIR /app
 COPY backend/requirements.txt .
 RUN pip install -r requirements.txt
 
-# Pre-download the u2net model so the runtime image is fully self-contained.
-RUN python -c "from rembg import new_session; new_session('u2net')"
+# Pre-download the isnet-general-use model so the runtime image is fully self-contained.
+RUN python -c "from rembg import new_session; new_session('isnet-general-use')"
 
 COPY backend/ ./
 

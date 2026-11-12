@@ -122,7 +122,7 @@ def test_get_session_creates_session_once(reset_session):
         second = main._get_session()
     assert first is sentinel
     assert second is sentinel
-    new_session.assert_called_once_with("u2net")
+    new_session.assert_called_once_with("isnet-general-use")
 
 
 @pytest.mark.asyncio
