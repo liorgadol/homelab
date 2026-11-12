@@ -14,6 +14,12 @@ function formatBleedSuffix(mm) {
 export default function Editor({ resultBlob, originalFile, onRerun }) {
   const {
     canvasRef,
+    viewportRef,
+    editVersion,
+    pan,
+    spaceHeld,
+    setSpaceHeld,
+    isPanning,
     originalUrl,
     brushSize, setBrushSize,
     brushOpacity, setBrushOpacity,
@@ -81,7 +87,7 @@ export default function Editor({ resultBlob, originalFile, onRerun }) {
     }, BLEED_DEBOUNCE_MS);
 
     return () => { if (bleedDebounceRef.current) clearTimeout(bleedDebounceRef.current); };
-  }, [bleedEnabled, bleedOffsetMm, canvasRef]);
+  }, [bleedEnabled, bleedOffsetMm, canvasRef, editVersion]);
 
   useEffect(() => {
     if (!bleedBlob) {
@@ -94,33 +100,77 @@ export default function Editor({ resultBlob, originalFile, onRerun }) {
   }, [bleedBlob]);
 
   useEffect(() => {
+    const isTyping = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
     function handleKey(e) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
-      if (e.key === 'e') setTool('erase');
-      if (e.key === 'r') setTool('restore');
+      const key = (e.key || '').toLowerCase();
+      const mod = e.metaKey || e.ctrlKey;
+      if (e.key === ' ' || e.code === 'Space') {
+        if (isTyping(e.target) || (e.target?.tagName === 'BUTTON')) return;
+        e.preventDefault();
+        setSpaceHeld(true);
+        return;
+      }
+      if (mod && key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) redo(); else undo();
+        return;
+      }
+      if (mod && key === 'y') { e.preventDefault(); redo(); return; }
+      if (mod || e.altKey || isTyping(e.target)) return;
+      if (key === 'e') setTool('erase');
+      if (key === 'r') setTool('restore');
     }
+    function handleKeyUp(e) {
+      if (e.key === ' ' || e.code === 'Space') setSpaceHeld(false);
+    }
+    function handleBlur() { setSpaceHeld(false); }
     window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [undo, redo, setTool]);
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', handleBlur);
+    return () => {
+      window.removeEventListener('keydown', handleKey);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [undo, redo, setTool, setSpaceHeld]);
 
-  const handleWheel = useCallback((e) => {
-    e.preventDefault();
-    setZoom((z) => Math.max(0.1, Math.min(4, z - e.deltaY * 0.001)));
+  const canvasAreaRef = useRef(null);
+  useEffect(() => {
+    const el = canvasAreaRef.current;
+    if (!el) return;
+    const onWheel = (e) => {
+      e.preventDefault();
+      setZoom((z) => Math.max(0.1, Math.min(4, z - e.deltaY * 0.001)));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
   }, [setZoom]);
 
   const toggleView = useCallback(() => {
     setViewMode((v) => v === 'result' ? 'original' : 'result');
   }, [setViewMode]);
 
-  const handleDownload = useCallback(() => {
+  const handleDownload = useCallback(async () => {
     const name = originalFile?.name || 'image.png';
-    if (bleedEnabled && bleedBlob) {
-      download(name, { blob: bleedBlob, suffix: formatBleedSuffix(bleedOffsetMm) });
-    } else {
+    if (!bleedEnabled) {
       download(name);
+      return;
     }
-  }, [download, originalFile, bleedEnabled, bleedBlob, bleedOffsetMm]);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    try {
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) throw new Error('Could not read canvas');
+      const form = new FormData();
+      form.append('file', blob, 'edited.png');
+      const res = await fetch(`${API}/add-bleed?offset_mm=${bleedOffsetMm}`, { method: 'POST', body: form });
+      if (!res.ok) throw new Error(`Bleed failed (${res.status})`);
+      const outBlob = await res.blob();
+      download(name, { blob: outBlob, suffix: formatBleedSuffix(bleedOffsetMm) });
+    } catch (err) {
+      setBleedError(err.message || 'Bleed failed');
+    }
+  }, [download, originalFile, bleedEnabled, bleedOffsetMm, canvasRef]);
 
   return (
     <div className="editor">
@@ -133,7 +183,7 @@ export default function Editor({ resultBlob, originalFile, onRerun }) {
         onToggleView={toggleView}
       />
 
-      <div className="canvas-area" onWheel={handleWheel}>
+      <div className="canvas-area" ref={canvasAreaRef}>
         <div className="view-chips">
           {['result', 'original', 'split'].map((m) => (
             <button
@@ -147,10 +197,10 @@ export default function Editor({ resultBlob, originalFile, onRerun }) {
           ))}
         </div>
 
-        <div className="canvas-viewport">
+        <div className="canvas-viewport" ref={viewportRef}>
           <div
             className={`canvas-scaler ${viewMode === 'split' ? 'split-mode' : ''}`}
-            style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
+            style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: 'center center' }}
           >
             {originalUrl && (viewMode === 'original' || viewMode === 'split') && (
               <div className={viewMode === 'split' ? 'split-pane' : ''}>
@@ -179,7 +229,7 @@ export default function Editor({ resultBlob, originalFile, onRerun }) {
                 className="editor-canvas"
                 role="img"
                 aria-label={`Canvas editor for ${originalFile?.name || 'image'}`}
-                style={{ cursor: 'crosshair' }}
+                style={{ cursor: isPanning ? 'grabbing' : spaceHeld ? 'grab' : 'crosshair' }}
                 onMouseDown={startDrawing}
                 onMouseMove={doPaint}
                 onMouseUp={stopDrawing}

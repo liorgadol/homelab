@@ -34,10 +34,27 @@ def make_solid_png(size=20, color=(0, 200, 0, 255)) -> bytes:
     return buf.getvalue()
 
 
+@pytest.fixture
+def fake_session():
+    """Stub out the rembg session so no model is downloaded."""
+    sentinel = object()
+    with patch("main._get_session", return_value=sentinel) as get_session:
+        get_session.sentinel = sentinel
+        yield get_session
+
+
+@pytest.fixture
+def reset_session():
+    import main
+    main._session = None
+    yield
+    main._session = None
+
+
 @pytest.mark.asyncio
-async def test_remove_bg_returns_png(app):
+async def test_remove_bg_returns_png(app, fake_session):
     result_png = make_test_png()
-    with patch("main.remove", return_value=result_png):
+    with patch("main.remove", return_value=result_png) as remove:
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             res = await client.post(
                 "/remove-bg",
@@ -46,13 +63,66 @@ async def test_remove_bg_returns_png(app):
     assert res.status_code == 200
     assert res.headers["content-type"] == "image/png"
     assert len(res.content) > 0
+    remove.assert_called_once()
+    assert remove.call_args.kwargs["session"] is fake_session.sentinel
 
 
 @pytest.mark.asyncio
-async def test_remove_bg_missing_file_returns_422(app):
+async def test_remove_bg_missing_file_returns_422(app, fake_session):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         res = await client.post("/remove-bg")
     assert res.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_remove_bg_non_image_returns_422(app, fake_session):
+    with patch("main.remove") as remove:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            res = await client.post(
+                "/remove-bg",
+                files={"file": ("note.txt", BytesIO(b"hello"), "text/plain")},
+            )
+    assert res.status_code == 422
+    remove.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_remove_bg_failure_returns_generic_500(app, fake_session):
+    with patch("main.remove", side_effect=RuntimeError("boom: /secret/internal/path")):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            res = await client.post(
+                "/remove-bg",
+                files={"file": ("photo.jpg", BytesIO(make_test_png()), "image/jpeg")},
+            )
+    assert res.status_code == 500
+    assert res.json()["detail"] == "Processing failed"
+    assert "secret" not in res.text
+
+
+@pytest.mark.asyncio
+async def test_add_bleed_failure_returns_generic_500(app):
+    src = make_solid_png()
+    with patch("main.add_bleed", side_effect=RuntimeError("boom: /secret/internal/path")):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            res = await client.post(
+                "/add-bleed",
+                params={"offset_mm": 1.0},
+                files={"file": ("img.png", BytesIO(src), "image/png")},
+            )
+    assert res.status_code == 500
+    assert res.json()["detail"] == "Processing failed"
+    assert "secret" not in res.text
+
+
+def test_get_session_creates_session_once(reset_session):
+    import main
+    sentinel = object()
+    with patch("main.new_session", return_value=sentinel) as new_session:
+        first = main._get_session()
+        second = main._get_session()
+    assert first is sentinel
+    assert second is sentinel
+    new_session.assert_called_once_with("u2net")
 
 
 @pytest.mark.asyncio

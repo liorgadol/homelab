@@ -8,6 +8,10 @@ export function useCanvasEditor({ resultBlob, originalFile }) {
   const undoStackRef = useRef([]);
   const redoStackRef = useRef([]);
   const isDrawingRef = useRef(false);
+  const viewportRef = useRef(null);          // .canvas-viewport element (owned by Editor)
+  const spaceHeldRef = useRef(false);
+  const panDragRef = useRef(null);
+  const panCleanupRef = useRef(null);
 
   const [brushSize, setBrushSize] = useState(20);
   const [brushOpacity, setBrushOpacity] = useState(0.8);
@@ -16,6 +20,27 @@ export function useCanvasEditor({ resultBlob, originalFile }) {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [zoom, setZoom] = useState(1);
   const [originalUrl, setOriginalUrl] = useState(null);
+  const [editVersion, setEditVersion] = useState(0);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const panRef = useRef(pan);
+  panRef.current = pan;
+  const [spaceHeld, setSpaceHeldState] = useState(false);
+  const [isPanning, setIsPanning] = useState(false);
+
+  const setSpaceHeld = useCallback((held) => {
+    spaceHeldRef.current = held;
+    setSpaceHeldState(held);
+  }, []);
+
+  const computeFit = useCallback((canvas) => {
+    const container = viewportRef.current || canvas.parentElement;
+    if (!container || !canvas.width || !canvas.height) return;
+    if (container.clientWidth <= 0 || container.clientHeight <= 0) return;
+    const scaleX = (container.clientWidth - 40) / canvas.width;
+    const scaleY = (container.clientHeight - 40) / canvas.height;
+    setZoom(Math.max(0.1, Math.min(scaleX, scaleY, 1)));
+    setPan({ x: 0, y: 0 });
+  }, []);
 
   // Load result blob into canvas whenever it changes
   useEffect(() => {
@@ -41,12 +66,15 @@ export function useCanvasEditor({ resultBlob, originalFile }) {
       );
       undoStackRef.current = [];
       redoStackRef.current = [];
+      isDrawingRef.current = false;
+      setEditVersion((v) => v + 1);
+      computeFit(canvas);
       revoke();
     };
     img.onerror = revoke;
     img.src = url;
     return revoke; // safety net on unmount
-  }, [resultBlob]);
+  }, [resultBlob, computeFit]);
 
   // Keep original image URL in sync (use state so img tag re-renders)
   useEffect(() => {
@@ -103,6 +131,31 @@ export function useCanvasEditor({ resultBlob, originalFile }) {
 
   const startDrawing = useCallback(
     (e) => {
+      // Middle mouse, or Space held: pan instead of paint
+      if (e.button === 1 || spaceHeldRef.current) {
+        if (e.button !== undefined && e.button > 1) return;
+        e.preventDefault?.();
+        panDragRef.current = { sx: e.clientX, sy: e.clientY, ox: panRef.current.x, oy: panRef.current.y };
+        setIsPanning(true);
+        const onMove = (ev) => {
+          const d = panDragRef.current;
+          if (!d) return;
+          setPan({ x: d.ox + ev.clientX - d.sx, y: d.oy + ev.clientY - d.sy });
+        };
+        const onUp = () => {
+          panDragRef.current = null;
+          setIsPanning(false);
+          window.removeEventListener('mousemove', onMove);
+          window.removeEventListener('mouseup', onUp);
+          panCleanupRef.current = null;
+        };
+        if (panCleanupRef.current) panCleanupRef.current();
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+        panCleanupRef.current = onUp;
+        return;
+      }
+      if (e.button !== undefined && e.button !== 0) return;
       pushUndo();
       isDrawingRef.current = true;
       doPaint(e);
@@ -110,8 +163,12 @@ export function useCanvasEditor({ resultBlob, originalFile }) {
     [pushUndo, doPaint],
   );
 
+  useEffect(() => () => { if (panCleanupRef.current) panCleanupRef.current(); }, []);
+
   const stopDrawing = useCallback(() => {
+    if (!isDrawingRef.current) return;
     isDrawingRef.current = false;
+    setEditVersion((v) => v + 1);
   }, []);
 
   const undo = useCallback(() => {
@@ -131,6 +188,7 @@ export function useCanvasEditor({ resultBlob, originalFile }) {
     undoStackRef.current = stack.slice(0, -1);
     currentImageDataRef.current = prev;
     ctx.putImageData(prev, 0, 0);
+    setEditVersion((v) => v + 1);
   }, []);
 
   const redo = useCallback(() => {
@@ -150,17 +208,13 @@ export function useCanvasEditor({ resultBlob, originalFile }) {
     redoStackRef.current = stack.slice(0, -1);
     currentImageDataRef.current = next;
     ctx.putImageData(next, 0, 0);
+    setEditVersion((v) => v + 1);
   }, []);
 
   const fitToScreen = useCallback(() => {
     if (!canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const container = canvas.parentElement;
-    if (!container) return;
-    const scaleX = (container.clientWidth - 40) / canvas.width;
-    const scaleY = (container.clientHeight - 40) / canvas.height;
-    setZoom(Math.min(scaleX, scaleY, 1));
-  }, []);
+    computeFit(canvasRef.current);
+  }, [computeFit]);
 
   const download = useCallback(
     (filename, override) => {
@@ -192,6 +246,12 @@ export function useCanvasEditor({ resultBlob, originalFile }) {
 
   return {
     canvasRef,
+    viewportRef,
+    editVersion,
+    pan,
+    spaceHeld,
+    setSpaceHeld,
+    isPanning,
     originalUrl,
     brushSize,
     setBrushSize,

@@ -81,7 +81,6 @@ export default function App() {
           <div className="processing-page" data-testid="processing-spinner" role="status" aria-live="polite">
             <div className="spinner" aria-hidden="true" />
             <p>Removing background…</p>
-            <p className="processing-sub">First run downloads the AI model (~170 MB)</p>
           </div>
         )}
 
