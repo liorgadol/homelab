@@ -1,22 +1,18 @@
 import { useRef } from 'react';
 import './UploadZone.css';
 
-const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
-
-export default function UploadZone({ onFile }) {
+export default function UploadZone({ onFiles }) {
   const inputRef = useRef(null);
 
-  function handleFile(file) {
-    if (file && ACCEPTED.includes(file.type)) {
-      onFile(file);
-    }
+  function handleFiles(fileList) {
+    const files = Array.from(fileList || []);
+    if (files.length > 0) onFiles(files);
   }
 
   function handleDrop(e) {
     e.preventDefault();
     e.currentTarget.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    handleFile(file);
+    handleFiles(e.dataTransfer.files);
   }
 
   function handleDragOver(e) {
@@ -29,7 +25,8 @@ export default function UploadZone({ onFile }) {
   }
 
   function handleChange(e) {
-    handleFile(e.target.files[0]);
+    handleFiles(e.target.files);
+    e.target.value = '';
   }
 
   return (
@@ -48,13 +45,14 @@ export default function UploadZone({ onFile }) {
       <input
         ref={inputRef}
         type="file"
+        multiple
         accept="image/jpeg,image/png,image/webp"
         style={{ display: 'none' }}
         onChange={handleChange}
       />
       <div className="upload-icon">🖼️</div>
       <p className="upload-title">Drag &amp; drop or click to browse</p>
-      <p className="upload-sub">JPEG · PNG · WebP</p>
+      <p className="upload-sub">JPEG · PNG · WebP · multiple files allowed</p>
     </div>
   );
 }

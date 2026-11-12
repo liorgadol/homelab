@@ -1,6 +1,17 @@
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { useState } from 'react';
 import Editor from './Editor';
+
+function Harness() {
+  const [bleed, setBleed] = useState({ enabled: false, offsetMm: 3 });
+  const [blob] = useState(() => makeBlob());
+  const [file] = useState(() => new File(['x'], 'cat.png'));
+  return (
+    <Editor sourceBlob={blob} originalFile={file} bleed={bleed} onBleedChange={setBleed}
+      onEdited={() => {}} onRerun={() => {}} />
+  );
+}
 
 function makeBlob(text = 'fake-png') {
   return new Blob([text], { type: 'image/png' });
@@ -28,14 +39,14 @@ describe('Editor bleed wiring', () => {
   }
 
   it('does not call /add-bleed when toggle is off', async () => {
-    render(<Editor resultBlob={makeBlob()} originalFile={new File(['x'], 'cat.png')} onRerun={() => {}} />);
+    render(<Harness />);
     await act(async () => { vi.advanceTimersByTime(1000); });
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it('POSTs to /add-bleed with offset_mm after debounce when enabled', async () => {
     mockBleedFetch();
-    render(<Editor resultBlob={makeBlob()} originalFile={new File(['x'], 'cat.png')} onRerun={() => {}} />);
+    render(<Harness />);
     fireEvent.click(screen.getByRole('checkbox', { name: /add white bleed/i }));
 
     await act(async () => { vi.advanceTimersByTime(300); });
@@ -60,7 +71,7 @@ describe('Editor bleed wiring', () => {
         blob: async () => new Blob(['bleed'], { type: 'image/png' }),
       });
 
-    render(<Editor resultBlob={makeBlob()} originalFile={new File(['x'], 'cat.png')} onRerun={() => {}} />);
+    render(<Harness />);
     fireEvent.click(screen.getByRole('checkbox', { name: /add white bleed/i }));
     await act(async () => { vi.advanceTimersByTime(300); });
 
@@ -73,7 +84,7 @@ describe('Editor bleed wiring', () => {
 
   it('download with bleed on uses bleed blob and -bleed suffix', async () => {
     mockBleedFetch();
-    render(<Editor resultBlob={makeBlob()} originalFile={new File(['x'], 'cat.png')} onRerun={() => {}} />);
+    render(<Harness />);
     fireEvent.click(screen.getByRole('checkbox', { name: /add white bleed/i }));
     await act(async () => { vi.advanceTimersByTime(300); });
     await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
@@ -87,7 +98,7 @@ describe('Editor bleed wiring', () => {
   });
 
   it('download with bleed off uses -nobg suffix', async () => {
-    render(<Editor resultBlob={makeBlob()} originalFile={new File(['x'], 'cat.png')} onRerun={() => {}} />);
+    render(<Harness />);
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
     fireEvent.click(screen.getByRole('button', { name: /download png/i }));
     await waitFor(() => expect(clickSpy).toHaveBeenCalled());

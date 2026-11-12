@@ -9,7 +9,7 @@ export default function RightPanel({
   brushOpacity, onBrushOpacityChange,
   viewMode, onViewModeChange,
   filename, dimensions,
-  onDownload, onRerun,
+  onDownload, onRerun, onApplyBleedToAll,
   bleedEnabled = false, onBleedEnabledChange,
   bleedOffsetMm = 3.0, onBleedOffsetMmChange,
   bleedLoading = false, bleedError = null,
@@ -105,6 +105,11 @@ export default function RightPanel({
           className="slider"
           aria-label="Offset"
         />
+        {onApplyBleedToAll && (
+          <button type="button" className="rerun-btn" onClick={onApplyBleedToAll}>
+            Apply outline to all
+          </button>
+        )}
         {bleedLoading && (
           <div className="bleed-status" data-testid="bleed-spinner" role="status" aria-live="polite">
             <span className="bleed-spinner" aria-hidden="true" /> Computing bleed…

@@ -1,3 +1,4 @@
+import React from 'react';
 import { render, screen, fireEvent, act, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -69,10 +70,24 @@ function makeBlob(text = 'fake-png') {
   return new Blob([text], { type: 'image/png' });
 }
 
-function renderEditor() {
-  return render(
-    <Editor resultBlob={makeBlob()} originalFile={new File(['x'], 'cat.png')} onRerun={() => {}} />,
+function EditorHarness() {
+  const [bleed, setBleed] = React.useState({ enabled: false, offsetMm: 3 });
+  const [blob] = React.useState(() => makeBlob());
+  const [file] = React.useState(() => new File(['x'], 'cat.png'));
+  return (
+    <Editor
+      sourceBlob={blob}
+      originalFile={file}
+      bleed={bleed}
+      onBleedChange={setBleed}
+      onEdited={() => {}}
+      onRerun={() => {}}
+    />
   );
+}
+
+function renderEditor() {
+  return render(<EditorHarness />);
 }
 
 function getCanvas() {

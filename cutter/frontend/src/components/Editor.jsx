@@ -2,16 +2,32 @@ import { useEffect, useCallback, useRef, useState } from 'react';
 import { useCanvasEditor } from '../hooks/useCanvasEditor';
 import Toolbar from './Toolbar';
 import RightPanel from './RightPanel';
+import { addBleed } from '../api';
 import './Editor.css';
 
 const API = '';
+const SAVE_DEBOUNCE_MS = 300;
 const BLEED_DEBOUNCE_MS = 250;
 
 function formatBleedSuffix(mm) {
   return `-bleed-${mm.toFixed(1).replace('.', '_')}mm`;
 }
 
-export default function Editor({ resultBlob, originalFile, onRerun }) {
+export default function Editor({
+  sourceBlob, originalFile, bleed, onBleedChange, onEdited, onRerun, onApplyBleedToAll,
+}) {
+  // Captured once: Editor is keyed by item id, and our own onEdited must not reload the canvas.
+  const [initialSource] = useState(() => sourceBlob);
+  const bleedEnabled = !!bleed?.enabled;
+  const bleedOffsetMm = bleed?.offsetMm ?? 3.0;
+  const setBleedEnabled = useCallback(
+    (enabled) => onBleedChange?.({ enabled, offsetMm: bleedOffsetMm }),
+    [onBleedChange, bleedOffsetMm],
+  );
+  const setBleedOffsetMm = useCallback(
+    (offsetMm) => onBleedChange?.({ enabled: bleedEnabled, offsetMm }),
+    [onBleedChange, bleedEnabled],
+  );
   const {
     canvasRef,
     viewportRef,
@@ -31,10 +47,8 @@ export default function Editor({ resultBlob, originalFile, onRerun }) {
     undo, redo,
     fitToScreen,
     download,
-  } = useCanvasEditor({ resultBlob, originalFile });
+  } = useCanvasEditor({ resultBlob: initialSource, originalFile });
 
-  const [bleedEnabled, setBleedEnabled] = useState(false);
-  const [bleedOffsetMm, setBleedOffsetMm] = useState(3.0);
   const [bleedBlob, setBleedBlob] = useState(null);
   const [bleedPaddingPx, setBleedPaddingPx] = useState(0);
   const [bleedUrl, setBleedUrl] = useState(null);
@@ -88,6 +102,40 @@ export default function Editor({ resultBlob, originalFile, onRerun }) {
 
     return () => { if (bleedDebounceRef.current) clearTimeout(bleedDebounceRef.current); };
   }, [bleedEnabled, bleedOffsetMm, canvasRef, editVersion]);
+
+  // Persist edits: debounce after user edit/undo/redo (editVersion 1 is the initial load).
+  const onEditedRef = useRef(onEdited);
+  onEditedRef.current = onEdited;
+  const saveTimerRef = useRef(null);
+  const savePendingRef = useRef(false);
+  const canvasElRef = useRef(null);
+
+  useEffect(() => {
+    canvasElRef.current = canvasRef.current;
+  }, [canvasRef]);
+
+  useEffect(() => {
+    if (editVersion <= 1) return;
+    savePendingRef.current = true;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null;
+      savePendingRef.current = false;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      canvas.toBlob((blob) => { if (blob) onEditedRef.current?.(blob); }, 'image/png');
+    }, SAVE_DEBOUNCE_MS);
+  }, [editVersion, canvasRef]);
+
+  // Flush pending save on unmount (toBlob is started synchronously).
+  useEffect(() => () => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = null;
+    if (!savePendingRef.current) return;
+    savePendingRef.current = false;
+    const canvas = canvasElRef.current;
+    if (canvas) canvas.toBlob((blob) => { if (blob) onEditedRef.current?.(blob); }, 'image/png');
+  }, []);
 
   useEffect(() => {
     if (!bleedBlob) {
@@ -161,11 +209,7 @@ export default function Editor({ resultBlob, originalFile, onRerun }) {
     try {
       const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
       if (!blob) throw new Error('Could not read canvas');
-      const form = new FormData();
-      form.append('file', blob, 'edited.png');
-      const res = await fetch(`${API}/add-bleed?offset_mm=${bleedOffsetMm}`, { method: 'POST', body: form });
-      if (!res.ok) throw new Error(`Bleed failed (${res.status})`);
-      const outBlob = await res.blob();
+      const outBlob = await addBleed(blob, bleedOffsetMm);
       download(name, { blob: outBlob, suffix: formatBleedSuffix(bleedOffsetMm) });
     } catch (err) {
       setBleedError(err.message || 'Bleed failed');
@@ -259,6 +303,7 @@ export default function Editor({ resultBlob, originalFile, onRerun }) {
         dimensions={dimensions}
         onDownload={handleDownload}
         onRerun={onRerun}
+        onApplyBleedToAll={onApplyBleedToAll ? () => onApplyBleedToAll({ enabled: bleedEnabled, offsetMm: bleedOffsetMm }) : undefined}
         bleedEnabled={bleedEnabled}
         onBleedEnabledChange={setBleedEnabled}
         bleedOffsetMm={bleedOffsetMm}

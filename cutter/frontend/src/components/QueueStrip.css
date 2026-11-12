@@ -1,0 +1,83 @@
+.queue-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: #0b1220;
+  border-bottom: 1px solid #1e293b;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+
+.queue-item { position: relative; flex-shrink: 0; width: 64px; height: 64px; }
+
+.queue-thumb {
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 2px solid #334155;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  background-color: #1e293b;
+  background-image:
+    linear-gradient(45deg, #273449 25%, transparent 25%, transparent 75%, #273449 75%),
+    linear-gradient(45deg, #273449 25%, transparent 25%, transparent 75%, #273449 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 6px 6px;
+}
+.queue-thumb:hover { border-color: #475569; }
+.queue-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.queue-item.selected .queue-thumb { border-color: #3b82f6; outline: 2px solid #3b82f6; outline-offset: 1px; }
+.queue-waiting .queue-thumb, .queue-processing .queue-thumb { opacity: 0.7; }
+
+.queue-badge {
+  position: absolute;
+  left: 3px;
+  bottom: 3px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 8px;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+  color: #e2e8f0;
+  background: #334155;
+  pointer-events: none;
+}
+.queue-badge.processing { background: #3b82f6; animation: queue-spin 1s linear infinite; }
+.queue-badge.done { background: #16a34a; }
+.queue-badge.error { background: #dc2626; }
+@keyframes queue-spin { to { transform: rotate(360deg); } }
+
+.queue-remove, .queue-retry {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid #475569;
+  border-radius: 50%;
+  background: #020817;
+  color: #cbd5e1;
+  font-size: 12px;
+  line-height: 16px;
+  cursor: pointer;
+}
+.queue-remove { top: -5px; right: -5px; }
+.queue-remove:hover { background: #7f1d1d; color: #fff; }
+.queue-retry { bottom: -5px; right: -5px; }
+.queue-retry:hover { background: #3b82f6; color: #fff; }
+
+.queue-add {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border: 2px dashed #334155;
+  border-radius: 8px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 13px;
+  cursor: pointer;
+}
+.queue-add:hover { border-color: #3b82f6; color: #3b82f6; }

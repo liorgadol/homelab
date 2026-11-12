@@ -74,3 +74,12 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .editor-page { flex: 1; display: flex; overflow: hidden; }
+
+.header-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.new-image-btn:disabled { opacity: 0.5; cursor: default; }
+.info-banner, .banner-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  margin: 8px 16px 0; padding: 8px 14px; border-radius: 8px; font-size: 13px;
+}
+.info-banner { background: #1e293b; border: 1px solid #334155; color: #cbd5e1; }
+.banner-close { background: none; border: none; color: inherit; font-size: 16px; cursor: pointer; }

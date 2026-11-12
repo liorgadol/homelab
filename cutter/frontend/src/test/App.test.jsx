@@ -39,7 +39,7 @@ describe('App state machine', () => {
     });
   });
 
-  it('shows error and returns to upload on backend failure', async () => {
+  it('shows error with retry on backend failure', async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 500 });
 
     render(<App />);
@@ -48,8 +48,9 @@ describe('App state machine', () => {
     await userEvent.upload(input, file);
 
     await waitFor(() => {
-      expect(screen.getByTestId('upload-zone')).toBeInTheDocument();
+      expect(screen.getByTestId('item-error')).toBeInTheDocument();
       expect(screen.getByText(/error|failed/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
     });
   });
 });
