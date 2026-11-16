@@ -35,5 +35,9 @@ emby/config/*
 emby/config/plugins/*
 !emby/config/plugins/configurations/
 
+# Jellyfin runtime state (databases, metadata, cache)
+jellyfin/config/
+jellyfin/cache/
+
 # Caddy runtime state
 caddy/config/
