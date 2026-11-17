@@ -723,6 +723,21 @@ services:
       - music:/media/music:ro
       - camera:/media/camera:ro
 
+  # WatchState - Syncs play state Emby -> Jellyfin. Backends (URLs, API keys,
+  # import/export switches) are set in the web UI and stored in ./watchstate/data.
+  # No media mounts: it matches by path suffix from the API, not by reading files.
+  watchstate:
+    image: ghcr.io/arabcoders/watchstate:latest
+    container_name: watchstate
+    restart: unless-stopped
+    user: "1000:1000"
+    environment:
+      - TZ=${TZ}
+    ports:
+      - "8098:8080"   # 8096 Emby, 8097 Jellyfin
+    volumes:
+      - ./watchstate/data:/config
+
   # Uptime Kuma - Uptime monitoring with Telegram alerts. Monitors are not
   # created in the UI: AutoKuma builds them from the kuma.* labels above.
   uptime-kuma:

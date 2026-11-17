@@ -39,5 +39,8 @@ emby/config/plugins/*
 jellyfin/config/
 jellyfin/cache/
 
+# WatchState runtime state (database, logs, backend API keys)
+watchstate/data/
+
 # Caddy runtime state
 caddy/config/
