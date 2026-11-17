@@ -688,55 +688,55 @@ services:
       - music:/media/music
       - camera:/media/camera
 
-  # Jellyfin - Trial alongside Emby. Same media, mounted :ro so it never
-  # writes into the libraries. NFO/metadata saving stays off in Jellyfin so
-  # it does not fight Emby over the same files. Web UI on host port 8097.
-  jellyfin:
-    image: jellyfin/jellyfin:latest
-    container_name: jellyfin
-    restart: unless-stopped
-    user: "1000:1000"
-    group_add:
-      - "44"    # video (/dev/dri)
-      - "993"   # render (/dev/dri)
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fs http://127.0.0.1:8096/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 60s
-    environment:
-      - TZ=${TZ}
-    ports:
-      - "8097:8096"    # http (host 8096 is Emby)
-    devices:
-      - /dev/dri:/dev/dri   # hw transcode. Remove if no iGPU.
-    volumes:
-      - ./jellyfin/config:/config
-      - ./jellyfin/cache:/cache
-      - movies:/media/movies:ro
-      - movies2:/media/movies2:ro
-      - movies3:/media/movies3:ro
-      - movies4:/media/movies4:ro
-      - movies4k:/media/movies4k:ro
-      - series:/media/series:ro
-      - music:/media/music:ro
-      - camera:/media/camera:ro
+# # Jellyfin - Trial alongside Emby. Same media, mounted :ro so it never
+# # writes into the libraries. NFO/metadata saving stays off in Jellyfin so
+# # it does not fight Emby over the same files. Web UI on host port 8097.
+# jellyfin:
+#    image: jellyfin/jellyfin:latest
+#    container_name: jellyfin
+#    restart: unless-stopped
+#    user: "1000:1000"
+#    group_add:
+#      - "44"    # video (/dev/dri)
+#      - "993"   # render (/dev/dri)
+#    healthcheck:
+#      test: ["CMD-SHELL", "curl -fs http://127.0.0.1:8096/health || exit 1"]
+#      interval: 30s
+#      timeout: 5s
+#      retries: 3
+#      start_period: 60s
+#    environment:
+#      - TZ=${TZ}
+#    ports:
+#      - "8097:8096"    # http (host 8096 is Emby)
+#    devices:
+#      - /dev/dri:/dev/dri   # hw transcode. Remove if no iGPU.
+#    volumes:
+#      - ./jellyfin/config:/config
+#      - ./jellyfin/cache:/cache
+#      - movies:/media/movies:ro
+#      - movies2:/media/movies2:ro
+#      - movies3:/media/movies3:ro
+#      - movies4:/media/movies4:ro
+#      - movies4k:/media/movies4k:ro
+#      - series:/media/series:ro
+#      - music:/media/music:ro
+#      - camera:/media/camera:ro
 
-  # WatchState - Syncs play state Emby -> Jellyfin. Backends (URLs, API keys,
-  # import/export switches) are set in the web UI and stored in ./watchstate/data.
-  # No media mounts: it matches by path suffix from the API, not by reading files.
-  watchstate:
-    image: ghcr.io/arabcoders/watchstate:latest
-    container_name: watchstate
-    restart: unless-stopped
-    user: "1000:1000"
-    environment:
-      - TZ=${TZ}
-    ports:
-      - "8098:8080"   # 8096 Emby, 8097 Jellyfin
-    volumes:
-      - ./watchstate/data:/config
+# # WatchState - Syncs play state Emby -> Jellyfin. Backends (URLs, API keys,
+# # import/export switches) are set in the web UI and stored in ./watchstate/data.
+# # No media mounts: it matches by path suffix from the API, not by reading files.
+# watchstate:
+#    image: ghcr.io/arabcoders/watchstate:latest
+#    container_name: watchstate
+#    restart: unless-stopped
+#    user: "1000:1000"
+#    environment:
+#      - TZ=${TZ}
+#    ports:
+#      - "8098:8080"   # 8096 Emby, 8097 Jellyfin
+#    volumes:
+#      - ./watchstate/data:/config
 
   # Uptime Kuma - Uptime monitoring with Telegram alerts. Monitors are not
   # created in the UI: AutoKuma builds them from the kuma.* labels above.
